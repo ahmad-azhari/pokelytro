@@ -7,6 +7,7 @@ export const environment = {
     users: '/api/users',
     pokemons: '/api/pokemons',
     teams: '/api/teams',
-    types: '/api/types'
+    types: '/api/types',
+    chatbot: '/api/chatbot/message'
   }
 };

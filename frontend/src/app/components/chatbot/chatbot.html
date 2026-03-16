@@ -1,0 +1,101 @@
+<button
+  class="chatbot-fab"
+  mat-fab
+  (click)="toggleChat()"
+  [class.open]="isOpen()"
+  id="chatbot-toggle-btn"
+  aria-label="Toggle chatbot"
+>
+  @if (isOpen()) {
+    <mat-icon>close</mat-icon>
+  } @else {
+    <mat-icon>chat</mat-icon>
+  }
+  @if (hasNewMessage() && !isOpen()) {
+    <span class="notification-dot"></span>
+  }
+</button>
+
+@if (isOpen()) {
+  <div class="chatbot-panel" id="chatbot-panel">
+    <div class="chatbot-header">
+      <div class="header-info">
+        <div class="header-avatar">
+          <mat-icon>smart_toy</mat-icon>
+        </div>
+        <div>
+          <h3>PokéBot</h3>
+          <span class="status-text">Pokémon Expert AI</span>
+        </div>
+      </div>
+      <button mat-icon-button (click)="clearChat()" aria-label="Clear chat" class="clear-btn">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+
+    <div class="chatbot-messages" #messagesContainer>
+      @if (messages().length === 0) {
+        <div class="welcome-message">
+          <div class="welcome-icon">
+            <mat-icon>catching_pokemon</mat-icon>
+          </div>
+          <h4>Welcome to PokéBot!</h4>
+          <p>Ask me anything about Pokémon — stats, types, abilities, team building, and more!</p>
+          <div class="suggestion-chips">
+            <button class="chip" (click)="inputText.set('What type is Charizard?')">🔥 What type is Charizard?</button>
+            <button class="chip" (click)="inputText.set('Compare Pikachu and Raichu')">⚡ Compare Pikachu and Raichu</button>
+            <button class="chip" (click)="inputText.set('Best Water type Pokémon?')">💧 Best Water types?</button>
+          </div>
+        </div>
+      }
+
+      @for (msg of messages(); track $index) {
+        <div class="message" [class.user]="msg.role === 'user'" [class.bot]="msg.role === 'model'">
+          @if (msg.role === 'model') {
+            <div class="message-avatar">
+              <mat-icon>smart_toy</mat-icon>
+            </div>
+          }
+          <div class="message-bubble">
+            <p [innerHTML]="msg.content | markdown"></p>
+          </div>
+        </div>
+      }
+
+      @if (isLoading()) {
+        <div class="message bot">
+          <div class="message-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+          <div class="message-bubble typing">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="chatbot-input">
+      <input
+        #messageInput
+        type="text"
+        placeholder="Ask about any Pokémon..."
+        [value]="inputText()"
+        (input)="inputText.set($any($event.target).value)"
+        (keydown)="onKeyDown($event)"
+        [disabled]="isLoading()"
+        id="chatbot-message-input"
+      />
+      <button
+        mat-icon-button
+        (click)="sendMessage()"
+        [disabled]="!inputText().trim() || isLoading()"
+        class="send-btn"
+        aria-label="Send message"
+      >
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  </div>
+}

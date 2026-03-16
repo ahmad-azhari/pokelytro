@@ -19,6 +19,8 @@ const userRoutes = require("./routes/user");
 app.use("/api/users", userRoutes);
 const teamRoutes = require("./routes/teams");
 app.use("/api/teams", teamRoutes);
+const chatbotRoutes = require("./routes/chatbot");
+app.use("/api/chatbot", chatbotRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from the backend!");
@@ -39,4 +41,6 @@ async function main() {
   await mongoose.connect(connectionString);
   mongoose.set("strictQuery", true);
   console.log("Connected to MongoDB");
+  
+  chatbotRoutes.initVectorStore();
 }
