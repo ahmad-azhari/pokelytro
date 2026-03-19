@@ -4,7 +4,7 @@
   (click)="toggleChat()"
   [class.open]="isOpen()"
   id="chatbot-toggle-btn"
-  aria-label="Toggle chatbot"
+  aria-label="Toggle LytroBot"
 >
   @if (isOpen()) {
     <mat-icon>close</mat-icon>
@@ -24,11 +24,11 @@
           <mat-icon>smart_toy</mat-icon>
         </div>
         <div>
-          <h3>PokéBot</h3>
-          <span class="status-text">Pokémon Expert AI</span>
+          <h3>LytroBot</h3>
+          <span class="status-text">Pokelytro Knowledge Assistant</span>
         </div>
       </div>
-      <button mat-icon-button (click)="clearChat()" aria-label="Clear chat" class="clear-btn">
+      <button mat-icon-button (click)="clearChat()" aria-label="Reset conversation" class="clear-btn">
         <mat-icon>delete_outline</mat-icon>
       </button>
     </div>
@@ -39,12 +39,12 @@
           <div class="welcome-icon">
             <mat-icon>catching_pokemon</mat-icon>
           </div>
-          <h4>Welcome to PokéBot!</h4>
-          <p>Ask me anything about Pokémon — stats, types, abilities, team building, and more!</p>
+          <h4>Welcome to LytroBot</h4>
+          <p>Ask about stats, matchups, abilities, and strategy with Pokelytro context-aware answers.</p>
           <div class="suggestion-chips">
-            <button class="chip" (click)="inputText.set('What type is Charizard?')">🔥 What type is Charizard?</button>
-            <button class="chip" (click)="inputText.set('Compare Pikachu and Raichu')">⚡ Compare Pikachu and Raichu</button>
-            <button class="chip" (click)="inputText.set('Best Water type Pokémon?')">💧 Best Water types?</button>
+            <button class="chip" (click)="inputText.set('Build a balanced team around Garchomp')">Build around Garchomp</button>
+            <button class="chip" (click)="inputText.set('Compare Rotom-Wash and Gastrodon defensively')">Rotom-Wash vs Gastrodon</button>
+            <button class="chip" (click)="inputText.set('Explain Fire versus Steel matchup details')">Fire vs Steel details</button>
           </div>
         </div>
       }
@@ -80,7 +80,7 @@
       <input
         #messageInput
         type="text"
-        placeholder="Ask about any Pokémon..."
+        placeholder="Ask LytroBot anything about Pokémon..."
         [value]="inputText()"
         (input)="inputText.set($any($event.target).value)"
         (keydown)="onKeyDown($event)"

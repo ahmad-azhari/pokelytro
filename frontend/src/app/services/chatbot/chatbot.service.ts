@@ -9,6 +9,14 @@ export interface ChatMessage {
   content: string;
 }
 
+interface ChatReply {
+  reply: string;
+}
+
+interface ChatHistoryResponse {
+  messages: ChatMessage[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -16,11 +24,19 @@ export class ChatbotService {
   private apiConfigService = inject(ApiConfigService);
   private http = inject(HttpClient);
 
-  private get api(): string {
+  private get messageApi(): string {
     return `${this.apiConfigService.getApiUrl()}${environment.api.chatbot}`;
   }
 
-  sendMessage(message: string, history: ChatMessage[]): Observable<{ reply: string }> {
-    return this.http.post<{ reply: string }>(this.api, { message, history });
+  private get historyApi(): string {
+    return this.messageApi.replace('/message', '/history');
+  }
+
+  sendMessage(message: string, sessionId: string): Observable<ChatReply> {
+    return this.http.post<ChatReply>(this.messageApi, { message, sessionId });
+  }
+
+  getHistory(sessionId: string): Observable<ChatHistoryResponse> {
+    return this.http.get<ChatHistoryResponse>(`${this.historyApi}?sessionId=${encodeURIComponent(sessionId)}`);
   }
 }

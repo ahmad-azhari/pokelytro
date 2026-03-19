@@ -24,7 +24,10 @@ app.use(express.json());
 if (process.env.MONGODB_URI) {
   mongoose
     .connect(process.env.MONGODB_URI)
-    .then(() => console.log("MongoDB connected"))
+    .then(() => {
+      console.log("MongoDB connected");
+      lytroBotRoutes.initVectorStore();
+    })
     .catch((err) => console.error("MongoDB connection error:", err));
 }
 
@@ -33,12 +36,14 @@ const userRoutes = require("../backend/routes/user");
 const pokemonRoutes = require("../backend/routes/pokemons");
 const teamRoutes = require("../backend/routes/teams");
 const typeRoutes = require("../backend/routes/types");
+const lytroBotRoutes = require("../backend/routes/chatbot");
 
 // Rutas
 app.use("/api/users", userRoutes);
 app.use("/api/pokemons", pokemonRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/types", typeRoutes);
+app.use("/api/chatbot", lytroBotRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -19,8 +19,8 @@ const userRoutes = require("./routes/user");
 app.use("/api/users", userRoutes);
 const teamRoutes = require("./routes/teams");
 app.use("/api/teams", teamRoutes);
-const chatbotRoutes = require("./routes/chatbot");
-app.use("/api/chatbot", chatbotRoutes);
+const lytroBotRoutes = require("./routes/chatbot");
+app.use("/api/chatbot", lytroBotRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from the backend!");
@@ -42,5 +42,5 @@ async function main() {
   mongoose.set("strictQuery", true);
   console.log("Connected to MongoDB");
   
-  chatbotRoutes.initVectorStore();
+  lytroBotRoutes.initVectorStore();
 }
