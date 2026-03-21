@@ -481,6 +481,8 @@ export class Pokemon implements OnInit {
       SV_Paldea: '(Scarlet/Violet Paldea)',
       SV_Kitakami: '(Scarlet/Violet Kitakami)',
       SV_Blueberry: '(Scarlet/Violet Blueberry Academy)',
+      ZA: '(Legends: Z-A)',
+      ZA_Dimensional: '(Legends: Z-A Mega Dimension)',
     };
     for (const [key, label] of Object.entries(gameDexMap)) {
       const value = (this.pokemon as any)[key];
