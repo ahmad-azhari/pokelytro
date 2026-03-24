@@ -7,6 +7,8 @@ export const environment = {
     users: '/api/users',
     pokemons: '/api/pokemons',
     teams: '/api/teams',
-    types: '/api/types'
-  }
+    types: '/api/types',
+    items: '/api/items',
+    moves: '/api/moves',
+  },
 };
