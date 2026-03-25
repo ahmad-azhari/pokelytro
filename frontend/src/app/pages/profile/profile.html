@@ -41,8 +41,11 @@
               <h4>{{ team.name }}</h4>
               <div class="team-members">
                 @for (pokeId of team.pokemons; track $index) {
-                  <a routerLink="/pokedex/{{ pokeId }}" class="pokemon-icon">
-                    <img [src]="'/images/' + pokeId + '.png'" [alt]="'Pokemon ' + pokeId" />
+                  <a routerLink="/pokedex/{{ getPokemonId(pokeId) }}" class="pokemon-icon">
+                    <img
+                      [src]="'/images/' + getPokemonId(pokeId) + '.png'"
+                      [alt]="'Pokemon ' + getPokemonId(pokeId)"
+                    />
                   </a>
                 }
               </div>

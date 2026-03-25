@@ -68,6 +68,11 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  getPokemonId(entry: number | { pokemonId?: number | string }): number {
+    if (typeof entry === 'number') return entry;
+    return Number(entry?.pokemonId);
+  }
+
   private refreshTeams(userId: string) {
     this.teamService.getByUserId(userId).subscribe({
       next: (teams: any) => {
