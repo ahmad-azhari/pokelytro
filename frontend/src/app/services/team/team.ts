@@ -34,6 +34,26 @@ export class Team {
   put(id: string, team: Team): Observable<Team> {
     return this.http.put<Team>(`${this.api}/${id}`, team);
   }
+
+  addMove(teamId: string, pokemonId: number, moveId: string): Observable<Team> {
+    return this.http.post<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves`, { moveId });
+  }
+
+  replaceMove(
+    teamId: string,
+    pokemonId: number,
+    moveId: string,
+    newMoveId: string,
+  ): Observable<Team> {
+    return this.http.patch<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`, {
+      newMoveId,
+    });
+  }
+
+  removeMove(teamId: string, pokemonId: number, moveId: string): Observable<Team> {
+    return this.http.delete<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`);
+  }
+
   delete(id: string): Observable<Team> {
     return this.http.delete<Team>(`${this.api}/${id}`);
   }

@@ -1,4 +1,4 @@
-export class Item {
+export class Move {
   _id?: string;
   name!: string;
   power!: number;
@@ -9,7 +9,7 @@ export class Item {
   description!: string;
   learned_by_ids!: number[];
 
-  constructor(init?: Partial<Item>) {
+  constructor(init?: Partial<Move>) {
     if (init) Object.assign(this, init);
   }
 }

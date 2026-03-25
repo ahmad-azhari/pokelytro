@@ -5,7 +5,8 @@ import { environment } from '../../../environments/environment';
 import { ApiConfigService } from '../api-config.service';
 
 export interface MoveModel {
-  id: string;
+  _id: string;
+  id: number;
   name: string;
   power: number;
   type: string;
