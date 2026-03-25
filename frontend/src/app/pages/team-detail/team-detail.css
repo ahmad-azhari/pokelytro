@@ -130,6 +130,258 @@
   align-items: center;
 }
 
+.moves-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  position: relative;
+}
+
+.move-slot {
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.move-slot.filled {
+  background: rgba(56, 158, 13, 0.2);
+  color: #d9f7be;
+  cursor: pointer;
+}
+
+.move-slot.filled:hover {
+  background: rgba(56, 158, 13, 0.35);
+}
+
+.move-slot.empty {
+  background: rgba(24, 144, 255, 0.2);
+  color: #91d5ff;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.move-slot.empty:hover {
+  background: rgba(24, 144, 255, 0.35);
+}
+
+.move-editor-menu {
+  position: absolute;
+  background: rgba(17, 23, 39, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.45rem;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 100;
+  margin-top: 0.3rem;
+}
+
+
+.global-move-picker {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.global-move-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.global-move-picker-header h4 {
+  margin: 0;
+  color: #fff;
+}
+
+.move-table-wrap {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.move-table-head,
+.move-table-row {
+  display: grid;
+  grid-template-columns: 150px 90px 100px 70px 80px 60px 1fr 70px;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 920px;
+}
+
+.move-table-head {
+  font-weight: 700;
+  color: #fff;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.move-table-row {
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.move-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moves-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-add-move,
+.btn-cancel-move {
+  border: none;
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-add-move {
+  background: #237804;
+}
+
+.btn-add-move:hover {
+  background: #389e0d;
+}
+
+.btn-cancel-move {
+  background: #a8071a;
+}
+
+.btn-cancel-move:hover {
+  background: #cf1322;
+}
+
+@media (max-width: 1100px) {
+  .global-move-picker {
+    overflow-x: auto;
+  }
+}
+
+.global-move-editor {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.global-move-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.global-move-editor-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.move-editor-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.detail-row {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.detail-row label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 110px;
+}
+
+.detail-row span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.detail-row.description {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.detail-row.description span {
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-replace-move,
+.btn-delete-move,
+.btn-close-editor {
+  border: none;
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-replace-move {
+  background: #1890ff;
+}
+
+.btn-replace-move:hover {
+  background: #0050b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 80, 179, 0.3);
+}
+
+.btn-delete-move {
+  background: #d9363e;
+}
+
+.btn-delete-move:hover {
+  background: #ff7875;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(217, 54, 62, 0.3);
+}
+
+.btn-close-editor {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.btn-close-editor:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* =====================
    Buttons
    ===================== */
@@ -295,6 +547,17 @@
 .btn-cancel {
   background-color: #d9363e;
   color: white;
+}
+
+.btn-volver{
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .btn-cancel:hover {

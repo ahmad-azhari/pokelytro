@@ -3,17 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Pokemon } from '../../models/pokemon/pokemon';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PokemonListStore } from '../../services/pokemon-list-store/pokemon-list-store';
 import { RouterLink } from '@angular/router';
 
 import { Team as TeamService } from '../../services/team/team';
-import { Team as TeamModel } from '../../models/team/team';
+import { Pokemon as PokemonService } from '../../services/pokemon/pokemon';
+import { Move as MoveService, MoveModel } from '../../services/move/move';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { TeamDetailDialog } from '../team-detail-dialog/team-detail-dialog';
+
+type TeamPokemonEntry = {
+  pokemonId: number;
+  moves: string[];
+};
 
 @Component({
   selector: 'app-team-detail',
@@ -24,25 +29,31 @@ import { TeamDetailDialog } from '../team-detail-dialog/team-detail-dialog';
 })
 export class TeamDetail implements OnInit {
   private teamService = inject(TeamService);
+  private pokemonService = inject(PokemonService);
+  private moveService = inject(MoveService);
   private route = inject(ActivatedRoute);
-  private pokemonListStore = inject(PokemonListStore);
-  private router = inject(Router);
+  router = inject(Router);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
-  team: TeamModel | null = null;
+  team: any | null = null;
   teamPokemons: Pokemon[] = [];
   allPokemons: Pokemon[] = [];
+  allMoves: MoveModel[] = [];
+  teamEntries: TeamPokemonEntry[] = [];
   selectedPokemonToReplace: Pokemon | null = null;
   errorMessage: string | null = null;
   isEditingName: boolean = false;
   newTeamName: string = '';
+  moveSlots = [0, 1, 2, 3];
+  activeMovePickerPokemonId: number | null = null;
+  replacingMoveId: string | null = null;
+  availableMovesForSelectedPokemon: MoveModel[] = [];
+  editingMoveSlot: { pokemonId: number; slotIndex: number } | null = null;
 
   ngOnInit() {
-    // Leer queryParams primero
     this.route.queryParams.subscribe((params) => {
-      const idParam = params['teamId'];
-      const teamId = idParam as string;
+      const teamId = params['teamId'] as string;
 
       if (!teamId) {
         alert('No teamId provided');
@@ -50,27 +61,36 @@ export class TeamDetail implements OnInit {
         return;
       }
 
-      // Cargar todos los pokemons
-      this.pokemonListStore.getList().subscribe({
-        next: (data: any) => {
-          this.allPokemons = data as Pokemon[];
+      // Cargar team y movimientos en paralelo
+      this.teamService.getById(teamId).subscribe({
+        next: (team: any) => {
+          this.team = team;
 
-          // Una vez tenemos los pokemons, cargar el equipo
-          this.teamService.getById(teamId).subscribe({
-            next: (team: any) => {
-              this.team = team as TeamModel;
+          if (!this.team) {
+            alert('Team not found');
+            this.router.navigate(['/team-builder']);
+            return;
+          }
 
-              if (!this.team) {
-                alert('Team not found');
-                this.router.navigate(['/team-builder']);
-                return;
-              }
+          // Extraer IDs únicos del equipo
+          const pokemonIds = this.team.pokemons
+            .map((entry: any) => (typeof entry === 'number' ? entry : entry.pokemonId))
+            .filter((id: number) => Number.isFinite(id));
 
-              // Mapear IDs a objetos Pokemon
-              const map = new Map(this.allPokemons.map((p) => [p.id, p]));
-              this.teamPokemons = (this.team.pokemons || [])
-                .map((id) => map.get(id)!)
-                .filter(Boolean);
+          // Cargar solo los Pokémon del equipo
+          if (pokemonIds.length > 0) {
+            this.pokemonService.getByIds(pokemonIds).subscribe({
+              next: (pokemons) => {
+                this.allPokemons = pokemons;
+                this.syncTeamPokemons();
+              },
+            });
+          }
+
+          // Cargar movimientos
+          this.moveService.get().subscribe({
+            next: (moves) => {
+              this.allMoves = moves;
             },
           });
         },
@@ -100,33 +120,42 @@ export class TeamDetail implements OnInit {
     if (!this.team || !this.selectedPokemonToReplace) return;
 
     const oldId = this.selectedPokemonToReplace.id;
-    const idx = this.team.pokemons.findIndex((id) => id === oldId);
+    const entries = this.teamEntries;
+    const idx = entries.findIndex((entry) => entry.pokemonId === oldId);
     if (idx === -1) return;
 
-    const previousIds = [...this.team.pokemons];
-    const previousTeamPokemons = [...this.teamPokemons];
-    const updatedIds = [...this.team.pokemons];
-    updatedIds[idx] = newPokemon.id;
+    const previousEntries = [...entries];
+    const updatedEntries = [...entries];
+    updatedEntries[idx] = {
+      pokemonId: newPokemon.id,
+      moves: [],
+    };
 
-    this.teamService.put(this.team._id!, { ...this.team, pokemons: updatedIds } as any).subscribe({
-      next: (response: any) => {
-        this.team = response as TeamModel;
-        this.teamPokemons = [...previousTeamPokemons];
-        this.teamPokemons[idx] = newPokemon;
-        this.selectedPokemonToReplace = null;
-        this.errorMessage = null;
-        this.mostrarNotificacion('Pokemon replaced successfully!');
-      },
-      error: (err) => {
-        this.errorMessage = err?.error?.message || 'Could not update the team';
-        this.team!.pokemons = previousIds;
-        this.selectedPokemonToReplace = null;
-      },
-    });
-  }
+    this.teamService
+      .put(this.team._id!, { ...this.team, pokemons: updatedEntries } as any)
+      .subscribe({
+        next: (response: any) => {
+          this.team = response;
 
-  onGoBack() {
-    this.router.navigate(['/team-builder']);
+          const hadNewPokemon = this.allPokemons.some((pokemon) => pokemon.id === newPokemon.id);
+          if (!hadNewPokemon) {
+            this.allPokemons = this.allPokemons
+              .filter((pokemon) => pokemon.id !== oldId)
+              .concat(newPokemon);
+          }
+
+          this.syncTeamPokemons();
+          this.selectedPokemonToReplace = null;
+          this.closeMovePicker();
+          this.errorMessage = null;
+          this.mostrarNotificacion('Pokemon replaced successfully!');
+        },
+        error: (err) => {
+          this.errorMessage = err?.error?.message || 'Could not update the team';
+          this.team!.pokemons = previousEntries;
+          this.selectedPokemonToReplace = null;
+        },
+      });
   }
 
   onEditName() {
@@ -144,9 +173,8 @@ export class TeamDetail implements OnInit {
       .put(this.team._id!, { ...this.team, name: this.newTeamName } as any)
       .subscribe({
         next: (response: any) => {
-          this.team = response as TeamModel;
-          this.isEditingName = false;
-          this.newTeamName = '';
+          this.team = response;
+          this.cancelEditName();
           this.errorMessage = null;
           this.mostrarNotificacion('Team name updated successfully!');
         },
@@ -156,10 +184,198 @@ export class TeamDetail implements OnInit {
       });
   }
 
-  onCancelEditName() {
+  cancelEditName() {
     this.isEditingName = false;
     this.newTeamName = '';
   }
+
+  getMoveIdForSlot(pokemonId: number, slotIndex: number): string | null {
+    const entry = this.teamEntries.find((item) => item.pokemonId === pokemonId);
+    return entry?.moves[slotIndex] || null;
+  }
+
+  getMoveNameForSlot(pokemonId: number, slotIndex: number): string {
+    const moveId = this.getMoveIdForSlot(pokemonId, slotIndex);
+    if (!moveId) return '+';
+    const moveName = this.allMoves.find((m) => m._id === moveId)?.name || 'Unknown move';
+    return this.formatMoveName(moveName);
+  }
+
+  onOpenMovePicker(pokemon: Pokemon) {
+    if (!this.team?._id) return;
+
+    const entry = this.teamEntries.find((item) => item.pokemonId === pokemon.id);
+    if (!entry) return;
+
+    const isReplacing = !!this.replacingMoveId;
+
+    if (!isReplacing && entry.moves.length >= 4) {
+      this.mostrarNotificacion('This Pokemon already has 4 moves');
+      return;
+    }
+
+    const usedMoveIds = new Set(entry.moves.filter((id) => id !== this.replacingMoveId));
+    const compatibleMoves = this.allMoves.filter(
+      (move) => move.learned_by_ids?.includes(pokemon.id) && !usedMoveIds.has(move._id),
+    );
+
+    if (compatibleMoves.length === 0) {
+      this.mostrarNotificacion('No available moves for this Pokemon');
+      return;
+    }
+
+    this.activeMovePickerPokemonId = pokemon.id;
+    this.availableMovesForSelectedPokemon = compatibleMoves;
+  }
+
+  onAddMoveToPokemon(moveId: string) {
+    if (!this.team?._id || !this.activeMovePickerPokemonId || !moveId) return;
+
+    if (this.replacingMoveId) {
+      this.teamService
+        .replaceMove(this.team._id, this.activeMovePickerPokemonId, this.replacingMoveId, moveId)
+        .subscribe({
+          next: (response: any) => {
+            this.team = response;
+            this.syncTeamPokemons();
+            this.closeMovePicker();
+            this.errorMessage = null;
+            this.mostrarNotificacion('Move replaced successfully!');
+          },
+          error: (err) => {
+            this.errorMessage = err?.error?.message || 'Could not replace move';
+          },
+        });
+      return;
+    }
+
+    this.teamService.addMove(this.team._id, this.activeMovePickerPokemonId, moveId).subscribe({
+      next: (response: any) => {
+        this.team = response;
+        this.syncTeamPokemons();
+        this.closeMovePicker();
+        this.errorMessage = null;
+        this.mostrarNotificacion('Move added successfully!');
+      },
+      error: (err) => {
+        this.errorMessage = err?.error?.message || 'Could not add move';
+      },
+    });
+  }
+
+  closeMovePicker() {
+    this.activeMovePickerPokemonId = null;
+    this.replacingMoveId = null;
+    this.availableMovesForSelectedPokemon = [];
+    this.editingMoveSlot = null;
+  }
+
+  onOpenMoveEditor(pokemon: Pokemon, slotIndex: number) {
+    const moveId = this.getMoveIdForSlot(pokemon.id, slotIndex);
+    if (!moveId) return;
+
+    this.editingMoveSlot = { pokemonId: pokemon.id, slotIndex };
+  }
+
+  onDeleteMove() {
+    if (!this.editingMoveSlot || !this.team?._id) return;
+
+    const moveId = this.getMoveIdForSlot(
+      this.editingMoveSlot.pokemonId,
+      this.editingMoveSlot.slotIndex,
+    );
+    if (!moveId) return;
+
+    this.teamService.removeMove(this.team._id, this.editingMoveSlot.pokemonId, moveId).subscribe({
+      next: (response: any) => {
+        this.team = response;
+        this.syncTeamPokemons();
+        this.editingMoveSlot = null;
+        this.errorMessage = null;
+        this.mostrarNotificacion('Move deleted successfully!');
+      },
+      error: (err) => {
+        this.errorMessage = err?.error?.message || 'Could not delete move';
+      },
+    });
+  }
+
+  onReplaceMove() {
+    if (!this.editingMoveSlot) return;
+    const moveId = this.getMoveIdForSlot(
+      this.editingMoveSlot.pokemonId,
+      this.editingMoveSlot.slotIndex,
+    );
+    if (!moveId) return;
+
+    this.replacingMoveId = moveId;
+    this.activeMovePickerPokemonId = this.editingMoveSlot.pokemonId;
+    this.onOpenMovePicker(this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)!);
+  }
+
+  getActiveMovePickerPokemonName(): string {
+    if (!this.activeMovePickerPokemonId) return '';
+    return (
+      this.teamPokemons.find((pokemon) => pokemon.id === this.activeMovePickerPokemonId)?.name ||
+      `#${this.activeMovePickerPokemonId}`
+    );
+  }
+
+  private buildTeamPokemonEntries(): TeamPokemonEntry[] {
+    const rawPokemons = this.team?.pokemons;
+    if (!Array.isArray(rawPokemons)) return [];
+
+    return rawPokemons
+      .map((entry: any) => {
+        if (typeof entry === 'number') {
+          return { pokemonId: entry, moves: [] };
+        }
+
+        if (entry && typeof entry === 'object') {
+          const pokemonId = Number(entry.pokemonId);
+          if (!Number.isFinite(pokemonId)) return null;
+
+          const moves = Array.isArray(entry.moves)
+            ? entry.moves.map((move: any) => String(move)).slice(0, 4)
+            : [];
+
+          return { pokemonId, moves };
+        }
+
+        return null;
+      })
+      .filter((entry: TeamPokemonEntry | null): entry is TeamPokemonEntry => !!entry);
+  }
+
+  getEditingMove(): MoveModel | undefined {
+    if (!this.editingMoveSlot) return undefined;
+
+    const moveId = this.getMoveIdForSlot(
+      this.editingMoveSlot.pokemonId,
+      this.editingMoveSlot.slotIndex,
+    );
+    return this.allMoves.find((move) => move._id === moveId);
+  }
+
+  getEditingPokemonName(): string {
+    if (!this.editingMoveSlot) return '';
+    return (
+      this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)?.name ||
+      `#${this.editingMoveSlot.pokemonId}`
+    );
+  }
+
+  formatMoveName(name: string | null | undefined): string {
+    if (!name) return '';
+    return name.replace(/-/g, ' ');
+  }
+
+  private syncTeamPokemons() {
+    const map = new Map(this.allPokemons.map((p) => [p.id, p]));
+    this.teamEntries = this.buildTeamPokemonEntries();
+    this.teamPokemons = this.teamEntries.map((entry) => map.get(entry.pokemonId)!).filter(Boolean);
+  }
+
   mostrarNotificacion(mensaje: string) {
     this.snackBar.open(mensaje, 'Cerrar', {
       duration: 3000,

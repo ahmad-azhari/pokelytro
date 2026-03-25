@@ -131,6 +131,11 @@ export class TeamBuilder implements OnInit {
     }
   }
 
+  getPokemonId(entry: number | { pokemonId: number }): number {
+    if (typeof entry === 'number') return entry;
+    return Number(entry?.pokemonId) || 0;
+  }
+
   pokemonName(id: number): string {
     return this.pokemonMap.get(id)?.name ?? `#${id}`;
   }
