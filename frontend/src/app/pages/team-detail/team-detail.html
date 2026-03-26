@@ -139,13 +139,13 @@
                       ><img [src]="'/' + move.damage_class + '.png'" [alt]="move.damage_class"
                     /></span>
                     <span
-                      ><strong>{{ move.power }}</strong></span
+                      ><strong>{{ move.power || '-' }}</strong></span
                     >
                     <span
-                      ><strong>{{ move.accuracy }}</strong></span
+                      ><strong>{{ move.accuracy || '-' }}</strong></span
                     >
                     <span
-                      ><strong>{{ move.pp }}</strong></span
+                      ><strong>{{ move.pp || '-' }}</strong></span
                     >
                     <span class="move-description">{{ move.description }}</span>
                     <button class="btn-add-move" (click)="onAddMoveToPokemon(move._id)">Add</button>

@@ -98,6 +98,7 @@ export class TeamDetail implements OnInit {
     });
   }
 
+  // Actualizar el Pokémon seleccionado para reemplazo y abrir el diálogo
   onUpdatePokemon(pokemon: Pokemon) {
     this.selectedPokemonToReplace = pokemon;
     const dialogRef = this.dialog.open(TeamDetailDialog, {
@@ -158,6 +159,7 @@ export class TeamDetail implements OnInit {
       });
   }
 
+  // Editar el nombre del equipo
   onEditName() {
     this.isEditingName = true;
     this.newTeamName = this.team?.name || '';
@@ -189,18 +191,19 @@ export class TeamDetail implements OnInit {
     this.newTeamName = '';
   }
 
+  // Obtener el ID del movimiento asignado a un slot específico de un Pokémon
   getMoveIdForSlot(pokemonId: number, slotIndex: number): string | null {
     const entry = this.teamEntries.find((item) => item.pokemonId === pokemonId);
     return entry?.moves[slotIndex] || null;
   }
-
+  // Obtener el nombre del movimiento para mostrar en la interfaz
   getMoveNameForSlot(pokemonId: number, slotIndex: number): string {
     const moveId = this.getMoveIdForSlot(pokemonId, slotIndex);
     if (!moveId) return '+';
     const moveName = this.allMoves.find((m) => m._id === moveId)?.name || 'Unknown move';
     return this.formatMoveName(moveName);
   }
-
+  // Abrir el selector de movimientos para un Pokémon específico, considerando si se está reemplazando un movimiento existente o agregando uno nuevo
   onOpenMovePicker(pokemon: Pokemon) {
     if (!this.team?._id) return;
 
@@ -228,6 +231,7 @@ export class TeamDetail implements OnInit {
     this.availableMovesForSelectedPokemon = compatibleMoves;
   }
 
+  // Manejar la adición o reemplazo de un movimiento para un Pokémon específico, actualizando el equipo en consecuencia y mostrando notificaciones de éxito o error
   onAddMoveToPokemon(moveId: string) {
     if (!this.team?._id || !this.activeMovePickerPokemonId || !moveId) return;
 
@@ -262,14 +266,14 @@ export class TeamDetail implements OnInit {
       },
     });
   }
-
+  // Cerrar el selector de movimientos y limpiar los estados relacionados
   closeMovePicker() {
     this.activeMovePickerPokemonId = null;
     this.replacingMoveId = null;
     this.availableMovesForSelectedPokemon = [];
     this.editingMoveSlot = null;
   }
-
+  // Manejar la apertura del editor de movimientos para un slot específico de un Pokémon, estableciendo el estado necesario para identificar qué movimiento se está editando
   onOpenMoveEditor(pokemon: Pokemon, slotIndex: number) {
     const moveId = this.getMoveIdForSlot(pokemon.id, slotIndex);
     if (!moveId) return;
@@ -277,6 +281,7 @@ export class TeamDetail implements OnInit {
     this.editingMoveSlot = { pokemonId: pokemon.id, slotIndex };
   }
 
+  // Manejar la eliminación de un movimiento específico de un slot de un Pokémon, actualizando el equipo en consecuencia y mostrando notificaciones de éxito o error
   onDeleteMove() {
     if (!this.editingMoveSlot || !this.team?._id) return;
 
@@ -299,7 +304,7 @@ export class TeamDetail implements OnInit {
       },
     });
   }
-
+  // Manejar la apertura del selector de movimientos para reemplazar un movimiento específico de un slot de un Pokémon, estableciendo el estado necesario para identificar qué movimiento se está reemplazando
   onReplaceMove() {
     if (!this.editingMoveSlot) return;
     const moveId = this.getMoveIdForSlot(
@@ -313,6 +318,7 @@ export class TeamDetail implements OnInit {
     this.onOpenMovePicker(this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)!);
   }
 
+  // Obtener el nombre del Pokémon actualmente seleccionado para el selector de movimientos, para mostrarlo en la interfaz del selector
   getActiveMovePickerPokemonName(): string {
     if (!this.activeMovePickerPokemonId) return '';
     return (
@@ -321,6 +327,7 @@ export class TeamDetail implements OnInit {
     );
   }
 
+  // Construir la lista de entradas de Pokémon del equipo a partir de los datos crudos del equipo, asegurándose de manejar diferentes formatos de entrada y filtrando entradas inválidas
   private buildTeamPokemonEntries(): TeamPokemonEntry[] {
     const rawPokemons = this.team?.pokemons;
     if (!Array.isArray(rawPokemons)) return [];
@@ -347,6 +354,7 @@ export class TeamDetail implements OnInit {
       .filter((entry: TeamPokemonEntry | null): entry is TeamPokemonEntry => !!entry);
   }
 
+  // Obtener el movimiento actualmente seleccionado para edición, basado en el estado de qué slot de movimiento se está editando, para mostrarlo en la interfaz del editor de movimientos
   getEditingMove(): MoveModel | undefined {
     if (!this.editingMoveSlot) return undefined;
 
@@ -357,6 +365,7 @@ export class TeamDetail implements OnInit {
     return this.allMoves.find((move) => move._id === moveId);
   }
 
+  // Obtener el nombre del Pokémon actualmente seleccionado para edición, basado en el estado de qué slot de movimiento se está editando, para mostrarlo en la interfaz del editor de movimientos
   getEditingPokemonName(): string {
     if (!this.editingMoveSlot) return '';
     return (
@@ -365,11 +374,13 @@ export class TeamDetail implements OnInit {
     );
   }
 
+  // Formatear el nombre de un movimiento para mostrarlo en la interfaz, reemplazando guiones por espacios y manejando casos de nombres nulos o indefinidos
   formatMoveName(name: string | null | undefined): string {
     if (!name) return '';
     return name.replace(/-/g, ' ');
   }
 
+  // Sincronizar los Pokémon del equipo con los datos disponibles, actualizando las listas necesarias
   private syncTeamPokemons() {
     const map = new Map(this.allPokemons.map((p) => [p.id, p]));
     this.teamEntries = this.buildTeamPokemonEntries();
