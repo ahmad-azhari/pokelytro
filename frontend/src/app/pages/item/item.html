@@ -1,0 +1,27 @@
+<h1 class="title">Items</h1>
+
+@if (loading) {
+  <div class="state">Loading items…</div>
+} @else if (error) {
+  <div class="state state-error">{{ error }}</div>
+} @else {
+  <div class="items-container">
+    @for (item of items; track $index) {
+      <div class="item-card">
+        <img
+          [src]="'/items/' + item.name + '.png'"
+          [alt]="item.name"
+          class="item-image"
+          onerror="this.src = '/items/Poké Ball.png'"
+        />
+        <div class="item-info">
+          <div class="item-header">
+            <h3 class="item-name">{{ item.name }}</h3>
+            <p class="item-gen"><strong>Gen:</strong> {{ item.gen }}</p>
+          </div>
+          <p class="item-desc">{{ item.desc }}</p>
+        </div>
+      </div>
+    }
+  </div>
+}

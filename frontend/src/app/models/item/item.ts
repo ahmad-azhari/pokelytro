@@ -1,9 +1,7 @@
 export class Item {
-  _id?: string;
   name!: string;
   gen!: string;
-  release!: string;
-  cost!: number;
+  desc!: string;
 
   constructor(init?: Partial<Item>) {
     if (init) Object.assign(this, init);
