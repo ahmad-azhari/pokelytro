@@ -10,12 +10,8 @@ const itemSchema = Schema({
     type: String,
     required: true,
   },
-  release: {
+  desc: {
     type: String,
-    required: true,
-  },
-  cost: {
-    type: Number,
     required: true,
   },
 });

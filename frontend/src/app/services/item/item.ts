@@ -4,17 +4,16 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiConfigService } from '../api-config.service';
 
-export interface ItemModel {
+export interface Item {
   name: string;
   gen: string;
-  release: string;
-  cost: number;
+  desc: string; // Agregado campo de descripción opcional
 }
 
 @Injectable({
   providedIn: 'root',
 })
-export class Item {
+export class ItemService {
   private apiConfigService = inject(ApiConfigService);
 
   constructor(private http: HttpClient) {}
@@ -24,11 +23,11 @@ export class Item {
   }
 
   // Get methods
-  get(): Observable<ItemModel[]> {
-    return this.http.get<ItemModel[]>(this.api);
+  get(): Observable<Item[]> {
+    return this.http.get<Item[]>(this.api);
   }
 
-  getById(id: string): Observable<ItemModel> {
-    return this.http.get<ItemModel>(`${this.api}/${id}`);
+  getById(id: string): Observable<Item> {
+    return this.http.get<Item>(`${this.api}/${id}`);
   }
 }

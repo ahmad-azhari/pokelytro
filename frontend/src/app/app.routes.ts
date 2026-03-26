@@ -12,6 +12,7 @@ import { TeamDetail } from './pages/team-detail/team-detail';
 import { Pokemon } from './pages/pokemon/pokemon';
 import { pokemonListResolver } from './resolvers/pokemon-list.resolver';
 import { Types } from './pages/types/types';
+import { Items } from './pages/item/item';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -31,6 +32,7 @@ export const routes: Routes = [
   },
   { path: 'type-chart', component: Types },
   { path: 'about', component: About },
+  { path: 'items', component: Items },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
