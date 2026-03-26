@@ -44,12 +44,18 @@
 
                 <div class="moves-grid">
                   @for (slot of moveSlots; track slot) {
-                    @if (getMoveIdForSlot(pokemon.id, slot)) {
-                      <button class="move-slot filled" (click)="onOpenMoveEditor(pokemon, slot)">
-                        {{ getMoveNameForSlot(pokemon.id, slot) }}
-                      </button>
+                    @if (isLoading) {
+                      <div class="move-slot loading">Loading...</div>
                     } @else {
-                      <button class="move-slot empty" (click)="onOpenMovePicker(pokemon)">+</button>
+                      @if (getMoveIdForSlot(pokemon.id, slot)) {
+                        <button class="move-slot filled" (click)="onOpenMoveEditor(pokemon, slot)">
+                          {{ getMoveNameForSlot(pokemon.id, slot) }}
+                        </button>
+                      } @else {
+                        <button class="move-slot empty" (click)="onOpenMovePicker(pokemon)">
+                          +
+                        </button>
+                      }
                     }
                   }
                 </div>

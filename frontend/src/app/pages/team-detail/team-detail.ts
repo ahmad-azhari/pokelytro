@@ -50,6 +50,7 @@ export class TeamDetail implements OnInit {
   replacingMoveId: string | null = null;
   availableMovesForSelectedPokemon: MoveModel[] = [];
   editingMoveSlot: { pokemonId: number; slotIndex: number } | null = null;
+  isLoading = true;
 
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
@@ -91,6 +92,7 @@ export class TeamDetail implements OnInit {
           this.moveService.get().subscribe({
             next: (moves) => {
               this.allMoves = moves;
+              this.isLoading = false;
             },
           });
         },
