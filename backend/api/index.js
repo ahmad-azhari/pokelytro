@@ -28,12 +28,16 @@ const userRoutes = require("../routes/user");
 const pokemonRoutes = require("../routes/pokemons");
 const teamRoutes = require("../routes/teams");
 const typeRoutes = require("../routes/types");
+const itemRoutes = require("../routes/items");
+const movesRoutes = require("../routes/moves");
 
 // Rutas
 app.use("/api/users", userRoutes);
 app.use("/api/pokemons", pokemonRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/types", typeRoutes);
+app.use("/api/items", itemRoutes);
+app.use("/api/moves", movesRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
