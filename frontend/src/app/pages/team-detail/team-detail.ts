@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
 
 import { Team as TeamService } from '../../services/team/team';
 import { Pokemon as PokemonService } from '../../services/pokemon/pokemon';
-import { Move as MoveService, MoveModel } from '../../services/move/move';
+import { MoveService, MoveModel } from '../../services/move/move';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';

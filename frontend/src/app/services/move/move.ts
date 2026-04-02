@@ -20,7 +20,7 @@ export interface MoveModel {
 @Injectable({
   providedIn: 'root',
 })
-export class Move {
+export class MoveService {
   private apiConfigService = inject(ApiConfigService);
 
   constructor(private http: HttpClient) {}
