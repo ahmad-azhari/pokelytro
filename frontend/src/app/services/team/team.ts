@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { Pokemon } from '../../models/pokemon/pokemon';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiConfigService } from '../api-config.service';
-import { Team as TeamModel } from '../../models/team/team';
 
 @Injectable({
   providedIn: 'root',
@@ -18,27 +18,25 @@ export class Team {
   }
 
   //Get methods
-  get(): Observable<TeamModel[]> {
-    return this.http.get<TeamModel[]>(this.api);
+  get(): Observable<Team[]> {
+    return this.http.get<Team[]>(this.api);
   }
-  getById(id: string): Observable<TeamModel> {
-    return this.http.get<TeamModel>(`${this.api}/${id}`);
+  getById(id: string): Observable<Team> {
+    return this.http.get<Team>(`${this.api}/${id}`);
   }
-  getByUserId(userId: string): Observable<TeamModel[]> {
-    return this.http.get<TeamModel[]>(`${this.api}/user/${userId}`);
+  getByUserId(userId: string): Observable<Team[]> {
+    return this.http.get<Team[]>(`${this.api}/user/${userId}`);
   }
   // Create, Update, Delete methods
-  post(team: TeamModel): Observable<TeamModel> {
-    return this.http.post<TeamModel>(this.api, team);
+  post(team: Team): Observable<Team> {
+    return this.http.post<Team>(this.api, team);
   }
-  put(id: string, team: TeamModel): Observable<TeamModel> {
-    return this.http.put<TeamModel>(`${this.api}/${id}`, team);
+  put(id: string, team: Team): Observable<Team> {
+    return this.http.put<Team>(`${this.api}/${id}`, team);
   }
 
-  addMove(teamId: string, pokemonId: number, moveId: string): Observable<TeamModel> {
-    return this.http.post<TeamModel>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves`, {
-      moveId,
-    });
+  addMove(teamId: string, pokemonId: number, moveId: string): Observable<Team> {
+    return this.http.post<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves`, { moveId });
   }
 
   replaceMove(
@@ -46,22 +44,17 @@ export class Team {
     pokemonId: number,
     moveId: string,
     newMoveId: string,
-  ): Observable<TeamModel> {
-    return this.http.patch<TeamModel>(
-      `${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`,
-      {
-        newMoveId,
-      },
-    );
+  ): Observable<Team> {
+    return this.http.patch<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`, {
+      newMoveId,
+    });
   }
 
-  removeMove(teamId: string, pokemonId: number, moveId: string): Observable<TeamModel> {
-    return this.http.delete<TeamModel>(
-      `${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`,
-    );
+  removeMove(teamId: string, pokemonId: number, moveId: string): Observable<Team> {
+    return this.http.delete<Team>(`${this.api}/${teamId}/pokemons/${pokemonId}/moves/${moveId}`);
   }
 
-  delete(id: string): Observable<TeamModel> {
-    return this.http.delete<TeamModel>(`${this.api}/${id}`);
+  delete(id: string): Observable<Team> {
+    return this.http.delete<Team>(`${this.api}/${id}`);
   }
 }

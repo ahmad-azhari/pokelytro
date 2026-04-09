@@ -9,7 +9,6 @@ import { RouterLink } from '@angular/router';
 
 import { Team as TeamService } from '../../services/team/team';
 import { Team as TeamModel } from '../../models/team/team';
-import { TeamPokemon } from '../../models/teamPokemon/teamPokemon';
 
 import { AuthService } from '../../services/auth.service';
 import { User } from '../../models/user/user';
@@ -100,7 +99,7 @@ export class TeamBuilder implements OnInit {
 
     const payload = new TeamModel({
       name: `Team ${nextId}`,
-      pokemons: this.currentTeam.map((p) => new TeamPokemon(p.id, [])),
+      pokemons: this.currentTeam.map((p) => p.id),
       userId: this.authService.currentUser()?._id || '',
     });
 
