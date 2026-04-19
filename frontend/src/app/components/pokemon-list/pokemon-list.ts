@@ -142,13 +142,11 @@ export class PokemonList implements OnInit {
           this.recomputeTotalPages();
           this.page = PaginationControls.normalizePage(this.page, this.totalPages);
           this.syncUrl();
-          console.log('Number of pokemons:', data.length);
         }),
       )
       .subscribe({
         next: () => {},
         error: (err) => {
-          console.error('Error loading pokemons:', err);
         },
       });
   }
@@ -171,7 +169,6 @@ export class PokemonList implements OnInit {
             }
           },
           error: (err) => {
-            console.error('Error loading favorites:', err);
           },
         });
       return;
@@ -317,7 +314,6 @@ export class PokemonList implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error toggling favorite:', err);
       },
     });
   }
