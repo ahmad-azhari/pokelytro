@@ -100,13 +100,7 @@
         }
       </section>
     </div>
-  } @else if (isLoading()) {
-    <p>Loading profile...</p>
   } @else {
-    <div class="error-state">
-      <h3>Loading Error</h3>
-      <p>Could not load profile information. Please try signing in again.</p>
-      <button (click)="onLogout()">Go to Login</button>
-    </div>
+    <p>Loading your profile...</p>
   }
 </div>
