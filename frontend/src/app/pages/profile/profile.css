@@ -375,8 +375,6 @@ h3 {
     transform: translateY(0);
   }
 }
-
-/* Profile Image Selector Styles */
 .profile-image-section {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
@@ -527,8 +525,6 @@ h3 {
     opacity: 0.6;
   }
 }
-
-/* Scrollbar personalizado para .images-grid */
 .images-grid::-webkit-scrollbar {
   width: 8px;
 }
