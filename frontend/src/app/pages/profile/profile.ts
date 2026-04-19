@@ -24,6 +24,9 @@ export class ProfileComponent implements OnInit {
   public currentUserBasic = this.authService.currentUser;
   private teamService = inject(TeamService);
   public teams: TeamModel[] = [];
+  public isUpdatingProfileImage = signal<boolean>(false);
+  public profileImageOptions = Array.from({ length: 20 }, (_, i) => i + 1);
+  public showProfileImageSelector = signal<boolean>(false);
 
   ngOnInit(): void {
     this.userProfile$ = this.authService.getProfile().pipe(
@@ -76,6 +79,48 @@ export class ProfileComponent implements OnInit {
       error: (err) => {
         console.error('Error loading teams for user', err);
         this.teams = [];
+      },
+    });
+  }
+
+  toggleProfileImageSelector(): void {
+    this.showProfileImageSelector.update(val => !val);
+  }
+
+  selectProfileImage(imageNumber: number): void {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser?._id) {
+      console.error('No current user');
+      return;
+    }
+
+    console.log('Iniciando cambio de foto de perfil a:', imageNumber);
+    console.log('User ID:', currentUser._id);
+    console.log('API URL:', `users/${currentUser._id}/profile-image`);
+
+    // Guardar estado anterior por si hay que revertir
+    const previousUser = { ...currentUser };
+    const updatedUser = { ...currentUser, profileImage: imageNumber };
+
+    // Actualizar de forma optimista en el frontend
+    this.authService.currentUser.set(updatedUser);
+    this.isUpdatingProfileImage.set(true);
+
+    // Actualizar en el backend
+    this.authService.updateProfileImage(currentUser._id, imageNumber).subscribe({
+      next: (response) => {
+        console.log('Respuesta del servidor:', response);
+        this.isUpdatingProfileImage.set(false);
+        // Cerrar el selector solo si fue exitosa la actualización
+        this.showProfileImageSelector.set(false);
+      },
+      error: (err) => {
+        console.error('Error al actualizar la foto de perfil:', err);
+        console.error('Status:', err.status);
+        console.error('Error message:', err.error);
+        this.isUpdatingProfileImage.set(false);
+        // Revertir a la foto anterior si hay error
+        this.authService.currentUser.set(previousUser);
       },
     });
   }

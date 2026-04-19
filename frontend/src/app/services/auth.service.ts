@@ -128,4 +128,16 @@ export class AuthService {
       })
       .pipe(map((resp) => resp?.favorites ?? []));
   }
+
+  updateProfileImage(id: string, profileImage: number): Observable<{ user: User }> {
+    return this.http
+      .put<{ user: User }>(`${this.apiUrl}/${id}/profile-image`, { profileImage })
+      .pipe(
+        tap((response) => {
+          if (response.user) {
+            this.currentUser.set(response.user);
+          }
+        }),
+      );
+  }
 }
