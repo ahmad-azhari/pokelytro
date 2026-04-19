@@ -196,7 +196,6 @@ export class Pokemon implements OnInit {
             }
           },
           error: (err) => {
-            console.error('Error loading favorites:', err);
           },
         });
       return;
@@ -407,7 +406,6 @@ export class Pokemon implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error toggling favorite:', err);
       },
     });
   }

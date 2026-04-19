@@ -23,7 +23,6 @@ const protect = async (req, res, next) => {
 
       return next();
     } catch (error) {
-      console.error("Error de autenticación JWT:", error.message);
       return res
         .status(401)
         .json({ message: "No autorizado, token fallido o expirado." });

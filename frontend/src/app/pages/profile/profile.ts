@@ -39,7 +39,6 @@ export class ProfileComponent implements OnInit {
         }
       }),
       catchError((error) => {
-        console.error('Error al cargar el perfil. Token inválido o expirado.', error);
         if (error.status === 401) {
           this.authService.logout();
           this.router.navigate(['/login']);
@@ -77,8 +76,6 @@ export class ProfileComponent implements OnInit {
         this.teams = teams as TeamModel[];
       },
       error: (err) => {
-        console.error('Error loading teams for user', err);
-        this.teams = [];
       },
     });
   }
@@ -90,13 +87,8 @@ export class ProfileComponent implements OnInit {
   selectProfileImage(imageNumber: number): void {
     const currentUser = this.authService.currentUser();
     if (!currentUser?._id) {
-      console.error('No current user');
       return;
     }
-
-    console.log('Iniciando cambio de foto de perfil a:', imageNumber);
-    console.log('User ID:', currentUser._id);
-    console.log('API URL:', `users/${currentUser._id}/profile-image`);
 
     // Guardar estado anterior por si hay que revertir
     const previousUser = { ...currentUser };
@@ -109,18 +101,12 @@ export class ProfileComponent implements OnInit {
     // Actualizar en el backend
     this.authService.updateProfileImage(currentUser._id, imageNumber).subscribe({
       next: (response) => {
-        console.log('Respuesta del servidor:', response);
         this.isUpdatingProfileImage.set(false);
         // Cerrar el selector solo si fue exitosa la actualización
         this.showProfileImageSelector.set(false);
       },
       error: (err) => {
-        console.error('Error al actualizar la foto de perfil:', err);
-        console.error('Status:', err.status);
-        console.error('Error message:', err.error);
         this.isUpdatingProfileImage.set(false);
-        // Revertir a la foto anterior si hay error
-        this.authService.currentUser.set(previousUser);
       },
     });
   }

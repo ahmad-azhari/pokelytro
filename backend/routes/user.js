@@ -80,7 +80,15 @@ router.post("/login", async (req, res) => {
 
 // GET: /profile (Ruta Protegida)
 router.get("/profile", protect, async (req, res) => {
-  res.status(200).json(req.user);
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado." });
+    }
+    res.status(200).json(sanitizeUser(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // GET: Listar todos los usuarios
@@ -176,11 +184,6 @@ router.delete("/:id/favorites", protect, async (req, res) => {
 // PUT: Actualizar foto de perfil (PROTEGIDA)
 router.put("/:id/profile-image", protect, async (req, res) => {
   try {
-    console.log("DEBUG: Actualizando profileImage");
-    console.log("User ID:", req.params.id);
-    console.log("Request Body:", req.body);
-    console.log("Type of profileImage:", typeof req.body.profileImage);
-
     if (!assertOwner(req, res)) return;
 
     let { profileImage } = req.body;
@@ -195,13 +198,10 @@ router.put("/:id/profile-image", protect, async (req, res) => {
       profileImage < 1 ||
       profileImage > 10
     ) {
-      console.log("ERROR: profileImage inválido:", profileImage);
       return res
         .status(400)
         .json({ message: "profileImage debe ser un número entre 1 y 10." });
     }
-
-    console.log("Actualizando usuario con profileImage:", profileImage);
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
@@ -209,20 +209,15 @@ router.put("/:id/profile-image", protect, async (req, res) => {
       { new: true },
     );
 
-    console.log("DEBUG: Usuario actualizado:", updatedUser);
-
     if (!updatedUser)
       return res.status(404).json({ message: "Usuario no encontrado" });
 
     const sanitized = sanitizeUser(updatedUser);
-    console.log("DEBUG: Usuario sanitizado:", sanitized);
-
     res.status(200).json({
       message: "Foto de perfil actualizada correctamente.",
       user: sanitized,
     });
   } catch (err) {
-    console.error("ERROR al actualizar profileImage:", err);
     res.status(500).json({ message: err.message });
   }
 });
