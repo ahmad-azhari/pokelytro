@@ -8,17 +8,13 @@ import { RouterLink } from '@angular/router';
 import { Team as TeamService } from '../../services/team/team';
 import { Pokemon as PokemonService } from '../../services/pokemon/pokemon';
 import { MoveService, MoveModel } from '../../services/move/move';
+import { Team as TeamModel, TeamPokemonSlot, normalizeTeamPokemons } from '../../models/team/team';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { TeamDetailDialog } from '../team-detail-dialog/team-detail-dialog';
-
-type TeamPokemonEntry = {
-  pokemonId: number;
-  moves: string[];
-};
 
 @Component({
   selector: 'app-team-detail',
@@ -36,11 +32,11 @@ export class TeamDetail implements OnInit {
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
-  team: any | null = null;
+  team: TeamModel | null = null;
   teamPokemons: Pokemon[] = [];
   allPokemons: Pokemon[] = [];
   allMoves: MoveModel[] = [];
-  teamEntries: TeamPokemonEntry[] = [];
+  teamEntries: TeamPokemonSlot[] = [];
   selectedPokemonToReplace: Pokemon | null = null;
   errorMessage: string | null = null;
   isEditingName: boolean = false;
@@ -64,7 +60,7 @@ export class TeamDetail implements OnInit {
 
       // Cargar team y movimientos en paralelo
       this.teamService.getById(teamId).subscribe({
-        next: (team: any) => {
+        next: (team) => {
           this.team = team;
 
           if (!this.team) {
@@ -74,9 +70,9 @@ export class TeamDetail implements OnInit {
           }
 
           // Extraer IDs únicos del equipo
-          const pokemonIds = this.team.pokemons
-            .map((entry: any) => (typeof entry === 'number' ? entry : entry.pokemonId))
-            .filter((id: number) => Number.isFinite(id));
+          const pokemonIds = normalizeTeamPokemons(this.team.pokemons)
+            .map((entry) => entry.pokemonId)
+            .filter((id) => Number.isFinite(id));
 
           // Cargar solo los Pokémon del equipo
           if (pokemonIds.length > 0) {
@@ -135,9 +131,9 @@ export class TeamDetail implements OnInit {
     };
 
     this.teamService
-      .put(this.team._id!, { ...this.team, pokemons: updatedEntries } as any)
+      .put(this.team._id!, { ...this.team, pokemons: updatedEntries })
       .subscribe({
-        next: (response: any) => {
+        next: (response) => {
           this.team = response;
 
           const hadNewPokemon = this.allPokemons.some((pokemon) => pokemon.id === newPokemon.id);
@@ -174,9 +170,9 @@ export class TeamDetail implements OnInit {
     }
 
     this.teamService
-      .put(this.team._id!, { ...this.team, name: this.newTeamName } as any)
+      .put(this.team._id!, { ...this.team, name: this.newTeamName })
       .subscribe({
-        next: (response: any) => {
+        next: (response) => {
           this.team = response;
           this.cancelEditName();
           this.errorMessage = null;
@@ -240,7 +236,7 @@ export class TeamDetail implements OnInit {
       this.teamService
         .replaceMove(this.team._id, this.activeMovePickerPokemonId, this.replacingMoveId, moveId)
         .subscribe({
-          next: (response: any) => {
+            next: (response) => {
             this.team = response;
             this.syncTeamPokemons();
             this.closeMovePicker();
@@ -255,7 +251,7 @@ export class TeamDetail implements OnInit {
     }
 
     this.teamService.addMove(this.team._id, this.activeMovePickerPokemonId, moveId).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.team = response;
         this.syncTeamPokemons();
         this.closeMovePicker();
@@ -292,7 +288,7 @@ export class TeamDetail implements OnInit {
     if (!moveId) return;
 
     this.teamService.removeMove(this.team._id, this.editingMoveSlot.pokemonId, moveId).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.team = response;
         this.syncTeamPokemons();
         this.editingMoveSlot = null;
@@ -326,30 +322,8 @@ export class TeamDetail implements OnInit {
     );
   }
 
-  private buildTeamPokemonEntries(): TeamPokemonEntry[] {
-    const rawPokemons = this.team?.pokemons;
-    if (!Array.isArray(rawPokemons)) return [];
-
-    return rawPokemons
-      .map((entry: any) => {
-        if (typeof entry === 'number') {
-          return { pokemonId: entry, moves: [] };
-        }
-
-        if (entry && typeof entry === 'object') {
-          const pokemonId = Number(entry.pokemonId);
-          if (!Number.isFinite(pokemonId)) return null;
-
-          const moves = Array.isArray(entry.moves)
-            ? entry.moves.map((move: any) => String(move)).slice(0, 4)
-            : [];
-
-          return { pokemonId, moves };
-        }
-
-        return null;
-      })
-      .filter((entry: TeamPokemonEntry | null): entry is TeamPokemonEntry => !!entry);
+  private buildTeamPokemonEntries(): TeamPokemonSlot[] {
+    return normalizeTeamPokemons(this.team?.pokemons);
   }
 
   getEditingMove(): MoveModel | undefined {

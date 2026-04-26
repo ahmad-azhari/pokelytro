@@ -38,8 +38,8 @@ export class TeamBuilder implements OnInit {
   userData: User | null = this.authService.currentUser();
 
   ngOnInit(): void {
-    this.pokemonListStore.getList().subscribe((data: any) => {
-      this.allPokemons = data as Pokemon[];
+    this.pokemonListStore.getList().subscribe((data) => {
+      this.allPokemons = (data ?? []) as Pokemon[];
       this.pokemonMap = new Map(this.allPokemons.map((p) => [p.id, p]));
     });
 
@@ -54,8 +54,8 @@ export class TeamBuilder implements OnInit {
     }
 
     this.teamService.getByUserId(currentUser._id).subscribe({
-      next: (teams: any) => {
-        this.teams = teams as TeamModel[];
+      next: (teams) => {
+        this.teams = teams ?? [];
       },
     });
   }
@@ -103,7 +103,7 @@ export class TeamBuilder implements OnInit {
       userId: this.authService.currentUser()?._id || '',
     });
 
-    this.teamService.post(payload as any).subscribe({
+    this.teamService.post(payload).subscribe({
       next: () => {
         this.currentTeam = [];
         this.isSaving = false;
