@@ -14,11 +14,13 @@ import { pokemonListResolver } from './resolvers/pokemon-list.resolver';
 import { Types } from './pages/types/types';
 import { Items } from './pages/item/item';
 import { Moves } from './pages/moves/moves';
+import { Combat } from './pages/combat/combat';
 
 export const routes: Routes = [
   { path: '', component: Home },
   { path: 'pokedex', component: Pokedex, resolve: { pokemonList: pokemonListResolver } },
   { path: 'pokedex/:id', component: Pokemon },
+  { path: 'combat', component: Combat, canActivate: [authGuard] },
   {
     path: 'team-builder',
     component: TeamBuilder,
