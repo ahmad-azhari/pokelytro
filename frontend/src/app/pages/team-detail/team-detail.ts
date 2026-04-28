@@ -340,7 +340,7 @@ export class TeamDetail implements OnInit {
     if (!this.editingMoveSlot) return '';
     return (
       this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)?.name ||
-      `#${this.editingMoveSlot.pokemonId}`
+      '#' + this.editingMoveSlot.pokemonId
     );
   }
 

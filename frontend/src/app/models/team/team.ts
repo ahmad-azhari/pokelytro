@@ -37,7 +37,7 @@ export function normalizeTeamPokemons(pokemons: TeamPokemon[] | null | undefined
 
       return null;
     })
-    .filter((x): x is TeamPokemonSlot => !!x);
+    .filter((x): x is TeamPokemonSlot => !!x); // !!x elimina null, undefined y false
 }
 
 export class Team {
