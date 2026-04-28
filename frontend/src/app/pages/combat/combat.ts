@@ -44,7 +44,7 @@ export class Combat implements OnInit {
   private moveService = inject(MoveService);
   private typeService = inject(TypeService);
 
-  // --- Constants (simple defaults for now)
+  // --- Constants
   readonly level = 50;
   readonly iv = 31;
   readonly ev = 0;
@@ -84,11 +84,7 @@ export class Combat implements OnInit {
     this.bootstrap();
   }
 
-  /**
-   * Carga inicial de datos necesarios para el combate.
-   * Flujo: valida sesión -> carga movimientos -> carga tabla de tipos -> carga equipos del usuario
-   * y selecciona un equipo por defecto para preparar el combate.
-   */
+  /** Carga base: sesión -> moves -> tabla de tipos -> equipos. */
   private bootstrap(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -141,12 +137,7 @@ export class Combat implements OnInit {
     });
   }
 
-  /**
-   * Al seleccionar un equipo:
-   * - normaliza el formato del team (pokemonId + moves[])
-   * - carga los Pokémon completos del backend (stats, tipos, etc.)
-   * - selecciona un Pokémon por defecto para empezar a combatir.
-   */
+  /** Cambia de equipo y prepara el combate. */
   onSelectTeam(teamId: string): void {
     if (!teamId) return;
     this.selectedTeamId.set(teamId);
@@ -171,21 +162,14 @@ export class Combat implements OnInit {
     });
   }
 
-  /**
-   * Cambia el Pokémon del usuario que va a combatir y reinicia el estado de batalla.
-   */
+  /** Cambia tu Pokémon y reinicia el combate. */
   onSelectPokemon(pokemonId: number | null): void {
     if (!pokemonId || !Number.isFinite(pokemonId)) return;
     this.selectedPokemonId.set(pokemonId);
     this.setupBattle(pokemonId);
   }
 
-  /**
-   * Prepara (o reinicia) el combate:
-   * - crea el estado de tu Pokémon (PS max/actual según fórmula)
-   * - carga un enemigo de ejemplo
-   * - determina 4 movimientos de daño para ambos bandos.
-   */
+  /** Prepara (o reinicia) el estado del combate. */
   private setupBattle(yourPokemonId: number | null): void {
     this.loading.set(true);
     this.error.set(null);
@@ -201,7 +185,7 @@ export class Combat implements OnInit {
     const you: BattlePokemon = this.makeBattlePokemon(yourPokemon);
     this.you.set(you);
 
-    // Example enemy Pokémon
+    // Enemy de ejemplo
     const enemyId = 1;
     this.pokemonService.getById(enemyId).subscribe({
       next: (enemyPokemon) => {
@@ -235,11 +219,7 @@ export class Combat implements OnInit {
   }
 
   // --- Battle actions
-  /**
-   * Ejecuta un turno completo:
-   * 1) el usuario usa un movimiento y se aplica el daño al enemigo
-   * 2) si el enemigo sigue vivo, responde con un movimiento aleatorio.
-   */
+  /** Ejecuta un turno: tú atacas y el enemigo responde si sigue vivo. */
   useMove(move: MoveModel): void {
     const you = this.you();
     const enemy = this.enemy();
@@ -263,7 +243,7 @@ export class Combat implements OnInit {
     const afterEnemy = this.enemy();
     if (!afterEnemy || afterEnemy.hpCurrent <= 0) return;
 
-    // Enemy turn (simple random)
+    // Turno enemigo (aleatorio)
     const enemyMove = this.pickRandomMove(this.enemyMoves());
     if (!enemyMove) return;
 
@@ -282,21 +262,14 @@ export class Combat implements OnInit {
     ]);
   }
 
-  /**
-   * Reinicia el combate manteniendo el Pokémon seleccionado.
-   */
+  /** Reinicia el combate manteniendo el Pokémon seleccionado. */
   resetBattle(): void {
     this.setupBattle(this.selectedPokemonId());
   }
 
   // --- Helpers
 
-  /**
-   * Construye los 4 movimientos del usuario para el combate:
-   * - prioriza los movimientos guardados en el equipo
-   * - filtra solo movimientos que hacen daño
-   * - si faltan, rellena con movimientos aleatorios compatibles con el Pokémon.
-   */
+  /** Resuelve hasta 4 movimientos (guardados + relleno compatible). */
   private resolveMovesForTeamPokemon(pokemonId: number): MoveModel[] {
     const entry = (this.teamEntries() ?? []).find((e) => e.pokemonId === pokemonId);
     const savedIds = new Set((entry?.moves ?? []).map(String));
@@ -320,10 +293,7 @@ export class Combat implements OnInit {
     return filled.slice(0, 4);
   }
 
-  /**
-   * Selecciona `count` movimientos aleatorios que hagan daño para un Pokémon dado,
-   * usando `learned_by_ids` como compatibilidad.
-   */
+  /** Movimientos aleatorios de daño compatibles por `learned_by_ids`. */
   private randomDamagingMoves(pokemonId: number, count: number): MoveModel[] {
     const allMoves = this.allMoves() ?? [];
     const candidates = allMoves.filter(
@@ -332,10 +302,7 @@ export class Combat implements OnInit {
     return this.pickRandomUnique(candidates, count);
   }
 
-  /**
-   * Determina si un movimiento cuenta como "de daño".
-   * Criterio actual: power > 0 y damage_class != status.
-   */
+  /** Movimiento de daño: `power > 0` y `damage_class != status`. */
   private isDamagingMove(move: MoveModel): boolean {
     const power = Number(move?.power);
     if (!Number.isFinite(power) || power <= 0) return false;
@@ -351,9 +318,7 @@ export class Combat implements OnInit {
     return list[idx] ?? null;
   }
 
-  /**
-   * Devuelve un array con elementos aleatorios sin repetición.
-   */
+  /** Aleatorio sin repetición. */
   private pickRandomUnique<T>(list: T[], count: number): T[] {
     if (count <= 0) return [];
     const copy = [...list];
@@ -368,10 +333,7 @@ export class Combat implements OnInit {
     return result;
   }
 
-  /**
-   * Crea el estado de combate de un Pokémon:
-   * calcula PS máximos con la fórmula y setea PS actuales = PS max.
-   */
+  /** Crea el estado de combate (PS max y actuales). */
   private makeBattlePokemon(pokemon: PokemonModel): BattlePokemon {
     const hpMax = this.calcHp(pokemon.hp, this.iv, this.ev, this.level);
     return {
@@ -388,10 +350,7 @@ export class Combat implements OnInit {
     return Math.max(0, Math.min(100, Math.round((p.hpCurrent / p.hpMax) * 100)));
   }
 
-  // PS = [ ((2 * Base + IV + (EV / 4)) * Nivel) / 100 ] + Nivel + 10
-  /**
-   * Calcula los PS máximos según la fórmula indicada.
-   */
+  /** PS = [((2*Base+IV+EV/4)*Nivel)/100] + Nivel + 10 */
   private calcHp(base: number, iv: number, ev: number, level: number): number {
     const Base = Number(base) || 0;
     const IV = Number(iv) || 0;
@@ -402,11 +361,7 @@ export class Combat implements OnInit {
     return Math.max(1, Math.floor(hp));
   }
 
-  // Standard non-HP stat formula (needed for A/D)
-  /**
-   * Calcula una stat no-PS (Ataque/Defensa/SpAtk/SpDef) para poder obtener A/D.
-   * Nota: no forma parte de tu petición original, pero es necesaria para la fórmula de daño.
-   */
+  /** Stat no-PS (Attack/Defense/SpAtk/SpDef). */
   private calcStat(base: number, iv: number, ev: number, level: number): number {
     const Base = Number(base) || 0;
     const IV = Number(iv) || 0;
@@ -417,10 +372,7 @@ export class Combat implements OnInit {
     return Math.max(1, Math.floor(stat));
   }
 
-  /**
-   * Calcula la efectividad del tipo del movimiento contra el/los tipo(s) del defensor.
-   * Si el Pokémon tiene 2 tipos, multiplica ambas efectividades.
-   */
+  /** Efectividad por tipos (si hay 2, multiplica). */
   private getEffectiveness(attackingType: string, defender: PokemonModel): number {
     const atk = String(attackingType ?? '');
     const d1 = String(defender?.type1 ?? '');
@@ -443,11 +395,7 @@ export class Combat implements OnInit {
     return Number.isFinite(m) ? m : 1;
   }
 
-  /**
-   * Aplica la fórmula de daño proporcionada:
-   * Daño = ((((2*Nivel/5)+2) * Poder * (A/D)) / 50 + 2) * STAB * Efectividad
-   * usando Attack/Defense o SpAtk/SpDef según damage_class.
-   */
+  /** Daño: ((((2*N/5)+2)*Poder*(A/D))/50+2) * STAB * Efectividad */
   private computeDamage(params: {
     attacker: PokemonModel;
     defender: PokemonModel;
@@ -463,7 +411,7 @@ export class Combat implements OnInit {
     const isPhysical = dmgClass === 'physical';
     const isSpecial = dmgClass === 'special';
 
-    // Si no es physical/special (p.ej. status), hacemos fallback a stats físicas.
+    // Fallback si no es physical/special
     const attackStat = isPhysical
       ? this.calcStat(attacker.attack, this.iv, this.ev, Nivel)
       : isSpecial
@@ -482,7 +430,6 @@ export class Combat implements OnInit {
     const stab = this.hasStab(attacker, move) ? 1.5 : 1;
     const effectiveness = this.getEffectiveness(move.type, defender);
 
-    // Daño = ((((2 * Nivel / 5) + 2) * Poder * (A / D)) / 50 + 2) * STAB * Efectividad
     const base = ((((2 * Nivel) / 5) + 2) * Poder * (A / D)) / 50 + 2;
     const raw = base * stab * effectiveness;
 
