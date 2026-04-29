@@ -5,7 +5,10 @@
   "scripts": {
     "build": "echo 'No build step required'",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.js"
+    "start": "node app.js",
+    "index:pokemon": "node scripts/indexPokemonEmbeddings.js",
+    "index:types": "node scripts/indexTypeMatchupEmbeddings.js",
+    "index:all": "npm run index:pokemon && npm run index:types"
   },
   "author": "",
   "license": "ISC",

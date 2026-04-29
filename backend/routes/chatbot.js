@@ -1,31 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const Groq = require("groq-sdk");
-const { LYTROBOT_SYSTEM_PROMPT } = require("../config/lytrobot-system-prompt");
-const {
-  buildKnowledgeBase,
-  retrieveKnowledge,
-} = require("../services/lytrobot/vector-store.service");
+const RAGOrchestrator = require("../services/lytrobot/RAGOrchestrator");
 const {
   resolveUserId,
   getRecentMessages,
   appendConversation,
 } = require("../services/lytrobot/memory.service");
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-function formatRetrievedContext(chunks) {
-  if (!Array.isArray(chunks) || chunks.length === 0) {
-    return "No retrieved context.";
-  }
-
-  return chunks
-    .map(
-      (chunk, index) =>
-        `[${index + 1}] ${chunk.title}\nSource: ${chunk.sourceType}:${chunk.sourceId}\nContent: ${chunk.text}`,
-    )
-    .join("\n\n");
-}
 
 function toFrontendRole(role) {
   return role === "assistant" ? "model" : "user";
@@ -65,51 +45,24 @@ router.post("/message", async (req, res) => {
     }
 
     const userId = resolveUserId(req);
-    const [retrievedChunks, recentMessages] = await Promise.all([
-      retrieveKnowledge(message, 6),
-      getRecentMessages({ sessionId, userId, limit: 5 }),
-    ]);
+    const recentMessages = await getRecentMessages({ sessionId, userId, limit: 5 });
 
-    const llmMessages = [
-      { role: "system", content: LYTROBOT_SYSTEM_PROMPT },
-      {
-        role: "system",
-        content:
-          "Retrieved Pokelytro Knowledge:\n" + formatRetrievedContext(retrievedChunks),
-      },
-      ...recentMessages.map((entry) => ({
-        role: entry.role,
-        content: entry.content,
-      })),
-      { role: "user", content: message },
-    ];
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: llmMessages,
-      temperature: 0.4,
-      max_tokens: 1024,
-    });
-
-    const reply =
-      completion.choices?.[0]?.message?.content ||
-      "I could not process that request.";
+    const ragResult = await RAGOrchestrator.executeFullRAGPipeline(
+      message,
+      recentMessages
+    );
 
     await appendConversation({
       sessionId,
       userId,
       userMessage: message,
-      assistantMessage: reply,
+      assistantMessage: ragResult.reply,
     });
 
     res.status(200).json({
-      reply,
-      references: retrievedChunks.map((chunk) => ({
-        title: chunk.title,
-        sourceType: chunk.sourceType,
-        sourceId: chunk.sourceId,
-        score: chunk.score,
-      })),
+      reply: ragResult.reply,
+      references: ragResult.references,
+      debug: ragResult.debug,
     });
   } catch (error) {
     if (error.status === 429) {
@@ -119,9 +72,10 @@ router.post("/message", async (req, res) => {
       });
     }
 
+    console.error("Error in /message route:", error);
     res.status(500).json({ message: "Error processing your LytroBot request." });
   }
 });
 
-router.initVectorStore = buildKnowledgeBase;
+router.initVectorStore = async () => {};
 module.exports = router;
