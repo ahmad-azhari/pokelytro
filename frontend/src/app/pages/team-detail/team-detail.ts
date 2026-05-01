@@ -1,14 +1,16 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Pokemon } from '../../models/pokemon/pokemon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
+import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
+import { FilterPanel } from '../../components/filter-panel/filter-panel';
 
 import { Team as TeamService } from '../../services/team/team';
 import { Pokemon as PokemonService } from '../../services/pokemon/pokemon';
 import { MoveService, MoveModel } from '../../services/move/move';
-import { Team as TeamModel, TeamPokemonSlot, normalizeTeamPokemons } from '../../models/team/team';
+import { Team as TeamModel, TeamPokemonSlot } from '../../models/team/team';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,10 +18,12 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { TeamDetailDialog } from '../team-detail-dialog/team-detail-dialog';
 
+type SortOption = 'name' | 'power' | 'accuracy' | 'pp';
+
 @Component({
   selector: 'app-team-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatDialogModule, MatButtonModule],
+  imports: [CommonModule, FormsModule, RouterLink, MatDialogModule, MatButtonModule, PaginationControls, FilterPanel],
   templateUrl: './team-detail.html',
   styleUrls: ['./team-detail.css'],
 })
@@ -48,6 +52,20 @@ export class TeamDetail implements OnInit {
   editingMoveSlot: { pokemonId: number; slotIndex: number } | null = null;
   isLoading = true;
 
+  // Variables del filtrado/paginación
+  movesSearchTerm = '';
+  selectedMoveType = '';
+  selectedMoveDamageClass = '';
+  moveSortBy: SortOption = 'name';
+  moveTypes: string[] = [];
+  moveDamageClasses: string[] = [];
+  movePage = 1;
+  movePageSize = 32;
+  moveTotalPages = 1;
+  compatibleMovesForSelectedPokemon: MoveModel[] = [];
+  filteredAvailableMoves: MoveModel[] = [];
+  @ViewChild(FilterPanel) moveFilterPanel?: FilterPanel;
+
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       const teamId = params['teamId'] as string;
@@ -70,7 +88,7 @@ export class TeamDetail implements OnInit {
           }
 
           // Extraer IDs únicos del equipo
-          const pokemonIds = normalizeTeamPokemons(this.team.pokemons)
+          const pokemonIds = (this.team.pokemons ?? [])
             .map((entry) => entry.pokemonId)
             .filter((id) => Number.isFinite(id));
 
@@ -88,6 +106,7 @@ export class TeamDetail implements OnInit {
           this.moveService.get().subscribe({
             next: (moves) => {
               this.allMoves = moves;
+              this.extractMoveFilterValues();
               this.isLoading = false;
             },
           });
@@ -226,7 +245,17 @@ export class TeamDetail implements OnInit {
     }
 
     this.activeMovePickerPokemonId = pokemon.id;
-    this.availableMovesForSelectedPokemon = compatibleMoves;
+    // Resetear filtros y búsqueda
+    this.movesSearchTerm = '';
+    this.selectedMoveType = '';
+    this.selectedMoveDamageClass = '';
+    this.moveSortBy = 'name';
+    this.movePage = 1;
+    this.compatibleMovesForSelectedPokemon = compatibleMoves;
+    this.filteredAvailableMoves = compatibleMoves;
+    this.extractMoveFilterValues();
+    this.applyMoveFilters();
+    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
   }
 
   onAddMoveToPokemon(moveId: string) {
@@ -268,6 +297,8 @@ export class TeamDetail implements OnInit {
     this.activeMovePickerPokemonId = null;
     this.replacingMoveId = null;
     this.availableMovesForSelectedPokemon = [];
+    this.compatibleMovesForSelectedPokemon = [];
+    this.filteredAvailableMoves = [];
     this.editingMoveSlot = null;
   }
 
@@ -318,12 +349,12 @@ export class TeamDetail implements OnInit {
     if (!this.activeMovePickerPokemonId) return '';
     return (
       this.teamPokemons.find((pokemon) => pokemon.id === this.activeMovePickerPokemonId)?.name ||
-      `#${this.activeMovePickerPokemonId}`
+      '#' + this.activeMovePickerPokemonId
     );
   }
 
   private buildTeamPokemonEntries(): TeamPokemonSlot[] {
-    return normalizeTeamPokemons(this.team?.pokemons);
+    return (this.team?.pokemons ?? []) as TeamPokemonSlot[];
   }
 
   getEditingMove(): MoveModel | undefined {
@@ -360,5 +391,110 @@ export class TeamDetail implements OnInit {
       duration: 3000,
       verticalPosition: 'top',
     });
+  }
+
+  // Funciones relacionadas con filtrado/paginación de movimientos en el move picker
+  private extractMoveFilterValues(): void {
+    const typeSet = new Set<string>();
+    const damageClassSet = new Set<string>();
+
+    for (const move of this.allMoves) {
+      if (move.type) typeSet.add(move.type);
+      if (move.damage_class) damageClassSet.add(move.damage_class);
+    }
+
+    this.moveTypes = Array.from(typeSet).sort((a, b) => a.localeCompare(b));
+    this.moveDamageClasses = Array.from(damageClassSet).sort((a, b) => a.localeCompare(b));
+  }
+
+  private applyMoveFilters(): void {
+    const q = this.movesSearchTerm.trim().toLowerCase();
+
+    let filtered = this.compatibleMovesForSelectedPokemon.filter((move) => {
+      const matchesSearch = !q || move.name.toLowerCase().includes(q);
+      const matchesType = !this.selectedMoveType || move.type === this.selectedMoveType;
+      const matchesDamageClass = !this.selectedMoveDamageClass || move.damage_class === this.selectedMoveDamageClass;
+      return matchesSearch && matchesType && matchesDamageClass;
+    });
+
+    if (this.moveSortBy === 'name') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (this.moveSortBy === 'power') {
+      filtered.sort((a, b) => (b.power || 0) - (a.power || 0) || a.name.localeCompare(b.name));
+    } else if (this.moveSortBy === 'accuracy') {
+      filtered.sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0) || a.name.localeCompare(b.name));
+    } else if (this.moveSortBy === 'pp') {
+      filtered.sort((a, b) => (b.pp || 0) - (a.pp || 0) || a.name.localeCompare(b.name));
+    }
+
+    this.filteredAvailableMoves = filtered;
+    this.recomputeMoveTotalPages();
+    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
+  }
+
+  private recomputeMoveTotalPages(): void {
+    const count = this.filteredAvailableMoves.length;
+    this.moveTotalPages = PaginationControls.calculateTotalPages(count, this.movePageSize);
+    this.movePage = PaginationControls.normalizePage(this.movePage, this.moveTotalPages);
+  }
+
+  get pagedAvailableMoves(): MoveModel[] {
+    return PaginationControls.getPagedItems(this.filteredAvailableMoves, this.movePage, this.movePageSize);
+  }
+
+  onMoveSearch(term: string): void {
+    this.movesSearchTerm = term;
+    this.movePage = 1;
+    this.applyMoveFilters();
+  }
+
+  onMoveTypeChange(type: string): void {
+    this.selectedMoveType = type;
+    this.movePage = 1;
+    this.applyMoveFilters();
+  }
+
+  onMoveDamageClassChange(damageClass: string): void {
+    this.selectedMoveDamageClass = damageClass;
+    this.movePage = 1;
+    this.applyMoveFilters();
+  }
+
+  onMoveSortChange(sort: SortOption): void {
+    this.moveSortBy = sort;
+    this.movePage = 1;
+    this.applyMoveFilters();
+  }
+
+  clearMoveFilters(): void {
+    this.selectedMoveType = '';
+    this.selectedMoveDamageClass = '';
+    this.moveSortBy = 'name';
+    this.movesSearchTerm = '';
+    this.movePage = 1;
+    this.applyMoveFilters();
+    this.moveFilterPanel?.closeFilters();
+  }
+
+  nextMovePage(): void {
+    const nextPage = PaginationControls.getNextPage(this.movePage, this.moveTotalPages);
+    if (nextPage !== undefined) {
+      this.movePage = nextPage;
+      this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
+    }
+  }
+
+  prevMovePage(): void {
+    const prevPage = PaginationControls.getPrevPage(this.movePage);
+    if (prevPage !== undefined) {
+      this.movePage = prevPage;
+      this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
+    }
+  }
+
+  goToMovePage(target: number): void {
+    if (!Number.isFinite(target)) return;
+    this.movePage = PaginationControls.normalizePage(target, this.moveTotalPages);
+    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
   }
 }

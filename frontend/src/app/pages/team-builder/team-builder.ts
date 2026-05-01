@@ -99,7 +99,10 @@ export class TeamBuilder implements OnInit {
 
     const payload = new TeamModel({
       name: `Team ${nextId}`,
-      pokemons: this.currentTeam.map((p) => p.id),
+      pokemons: this.currentTeam.map((p) => ({
+        pokemonId: p.id,
+        moves: [] 
+      })),
       userId: this.authService.currentUser()?._id || '',
     });
 

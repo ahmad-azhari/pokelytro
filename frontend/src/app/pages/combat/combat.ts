@@ -12,7 +12,6 @@ import { Pokemon as PokemonModel } from '../../models/pokemon/pokemon';
 import {
   Team as TeamModel,
   TeamPokemonSlot,
-  normalizeTeamPokemons,
 } from '../../models/team/team';
 
 type BattlePokemon = {
@@ -81,11 +80,11 @@ export class Combat implements OnInit {
   });
 
   ngOnInit(): void {
-    this.bootstrap();
+    this.dataLoad();
   }
 
   /** Carga base: sesión -> moves -> tabla de tipos -> equipos. */
-  private bootstrap(): void {
+  private dataLoad(): void {
     this.loading.set(true);
     this.error.set(null);
 
@@ -143,7 +142,7 @@ export class Combat implements OnInit {
     this.selectedTeamId.set(teamId);
 
     const team = (this.teams() ?? []).find((t) => t?._id === teamId);
-    const entries = normalizeTeamPokemons(team?.pokemons);
+    const entries = (team?.pokemons ?? []) as TeamPokemonSlot[];
     this.teamEntries.set(entries);
 
     const ids = entries.map((e) => e.pokemonId);

@@ -120,6 +120,72 @@
               <button class="btn-cancel-move" (click)="closeMovePicker()">Close</button>
             </div>
 
+            <div class="pagination-controls">
+              <div class="left-controls">
+                <input
+                  class="search-input"
+                  type="text"
+                  placeholder="Search by name"
+                  [(ngModel)]="movesSearchTerm"
+                  (input)="onMoveSearch(movesSearchTerm)"
+                />
+                <app-filter-panel>
+                  <ng-template #filterContent>
+                    <div class="filters-row">
+                      <label>
+                        Type
+                        <select
+                          class="filter-select"
+                          [(ngModel)]="selectedMoveType"
+                          (ngModelChange)="onMoveTypeChange($event)"
+                        >
+                          <option value="">All</option>
+                          @for (type of moveTypes; track type) {
+                            <option [value]="type">{{ type }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label>
+                        Category
+                        <select
+                          class="filter-select"
+                          [(ngModel)]="selectedMoveDamageClass"
+                          (ngModelChange)="onMoveDamageClassChange($event)"
+                        >
+                          <option value="">All</option>
+                          @for (damageClass of moveDamageClasses; track damageClass) {
+                            <option [value]="damageClass">{{ damageClass }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label>
+                        Sort
+                        <select
+                          class="filter-select"
+                          [(ngModel)]="moveSortBy"
+                          (ngModelChange)="onMoveSortChange($event)"
+                        >
+                          <option value="name">A-Z</option>
+                          <option value="power">Power</option>
+                          <option value="accuracy">Accuracy</option>
+                          <option value="pp">PP</option>
+                        </select>
+                      </label>
+                      <button type="button" class="clear-filters" (click)="clearMoveFilters()">Clear</button>
+                    </div>
+                  </ng-template>
+                </app-filter-panel>
+              </div>
+
+              <app-pagination-controls
+                [page]="movePage"
+                [totalPages]="moveTotalPages"
+                (nextPage)="nextMovePage()"
+                (prevPage)="prevMovePage()"
+                (goToPage)="goToMovePage($event)"
+              ></app-pagination-controls>
+            </div>
+
             @if (availableMovesForSelectedPokemon.length === 0) {
               <p class="moves-empty">No available moves to add.</p>
             } @else {
@@ -137,22 +203,12 @@
 
                 @for (move of availableMovesForSelectedPokemon; track move._id) {
                   <div class="move-table-row">
-                    <span
-                      ><strong>{{ formatMoveName(move.name) }}</strong></span
-                    >
+                    <span><strong>{{ formatMoveName(move.name) }}</strong></span>
                     <span class="type" [ngClass]="move.type">{{ move.type }}</span>
-                    <span
-                      ><img [src]="'/' + move.damage_class + '.png'" [alt]="move.damage_class"
-                    /></span>
-                    <span
-                      ><strong>{{ move.power || '-' }}</strong></span
-                    >
-                    <span
-                      ><strong>{{ move.accuracy || '-' }}</strong></span
-                    >
-                    <span
-                      ><strong>{{ move.pp || '-' }}</strong></span
-                    >
+                    <span><img [src]="'/' + move.damage_class + '.png'" [alt]="move.damage_class" /></span>
+                    <span><strong>{{ move.power || '-' }}</strong></span>
+                    <span><strong>{{ move.accuracy || '-' }}</strong></span>
+                    <span><strong>{{ move.pp || '-' }}</strong></span>
                     <span class="move-description">{{ move.description }}</span>
                     <button class="btn-add-move" (click)="onAddMoveToPokemon(move._id)">Add</button>
                   </div>
