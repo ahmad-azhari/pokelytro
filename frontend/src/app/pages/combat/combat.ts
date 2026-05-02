@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 
 import { AuthService } from '../../services/auth.service';
 import { Team as TeamService } from '../../services/team/team';
@@ -14,6 +16,8 @@ import {
   TeamPokemonSlot,
 } from '../../models/team/team';
 
+import { PokemonPickerDialog } from '../../components/pokemon-picker-dialog/pokemon-picker-dialog';
+
 type BattlePokemon = {
   pokemon: PokemonModel;
   level: number;
@@ -25,6 +29,8 @@ type BattleActionLog = {
   actor: 'you' | 'enemy';
   moveName: string;
   damage: number;
+  crit: boolean;
+  roll: number;
   effectiveness: number;
   stab: number;
 };
@@ -32,7 +38,7 @@ type BattleActionLog = {
 @Component({
   selector: 'app-combat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatButtonModule],
   templateUrl: './combat.html',
   styleUrls: ['./combat.css'],
 })
@@ -42,6 +48,7 @@ export class Combat implements OnInit {
   private pokemonService = inject(PokemonService);
   private moveService = inject(MoveService);
   private typeService = inject(TypeService);
+  private dialog = inject(MatDialog);
 
   // --- Constants
   readonly level = 50;
@@ -57,6 +64,7 @@ export class Combat implements OnInit {
   teamEntries = signal<TeamPokemonSlot[]>([]);
   teamPokemons = signal<PokemonModel[]>([]);
   selectedPokemonId = signal<number | null>(null);
+  selectedEnemyId = signal<number>(1);
 
   allMoves = signal<MoveModel[]>([]);
   typeRows = signal<TypeEffectivenessRow[]>([]);
@@ -101,7 +109,10 @@ export class Combat implements OnInit {
         this.allMoves.set(moves ?? []);
         this.typeService.get().subscribe({
           next: (rows) => {
-            this.typeRows.set(rows ?? []);
+            const normalized = (rows ?? [])
+              .map((r) => this.normalizeTypeRow(r))
+              .filter((r): r is TypeEffectivenessRow => r !== null);
+            this.typeRows.set(normalized);
             this.teamService.getByUserId(currentUser._id).subscribe({
               next: (teams) => {
                 const teamList = teams ?? [];
@@ -136,6 +147,25 @@ export class Combat implements OnInit {
     });
   }
 
+  private normalizeTypeRow(row: any): TypeEffectivenessRow | null {
+    if (!row || typeof row !== 'object') return null;
+
+    const attacking = row.atacante;
+    const defender = row.defensor;
+    const multiplier = row.multiplicador;
+
+    if (typeof attacking !== 'string' || typeof defender !== 'string') return null;
+    const m = Number(multiplier);
+    if (!Number.isFinite(m)) return null;
+
+    return {
+      _id: row._id,
+      attacking_type: this.normalizeTypeName(attacking),
+      defender_type: this.normalizeTypeName(defender),
+      multiplier: m,
+    };
+  }
+
   /** Cambia de equipo y prepara el combate. */
   onSelectTeam(teamId: string): void {
     if (!teamId) return;
@@ -152,7 +182,7 @@ export class Combat implements OnInit {
 
         const defaultPokemonId = (pokemons?.[0]?.id) ?? null;
         this.selectedPokemonId.set(defaultPokemonId);
-        this.setupBattle(defaultPokemonId);
+        this.setupBattle(defaultPokemonId, this.selectedEnemyId());
       },
       error: () => {
         this.loading.set(false);
@@ -165,11 +195,29 @@ export class Combat implements OnInit {
   onSelectPokemon(pokemonId: number | null): void {
     if (!pokemonId || !Number.isFinite(pokemonId)) return;
     this.selectedPokemonId.set(pokemonId);
-    this.setupBattle(pokemonId);
+    this.setupBattle(pokemonId, this.selectedEnemyId());
+  }
+
+  openEnemyPicker(): void {
+    const dialogRef = this.dialog.open(PokemonPickerDialog, {
+      data: {
+        title: 'Elegir enemigo',
+        subtitle: 'Selecciona el Pokémon enemigo para el combate:',
+        actionLabel: 'Elegir',
+      },
+      width: '980px',
+      maxWidth: '96vw',
+    });
+
+    dialogRef.afterClosed().subscribe((picked: PokemonModel | null) => {
+      if (!picked?.id) return;
+      this.selectedEnemyId.set(picked.id);
+      this.setupBattle(this.selectedPokemonId(), picked.id);
+    });
   }
 
   /** Prepara (o reinicia) el estado del combate. */
-  private setupBattle(yourPokemonId: number | null): void {
+  private setupBattle(yourPokemonId: number | null, enemyPokemonId: number | null): void {
     this.loading.set(true);
     this.error.set(null);
     this.log.set([]);
@@ -184,8 +232,13 @@ export class Combat implements OnInit {
     const you: BattlePokemon = this.makeBattlePokemon(yourPokemon);
     this.you.set(you);
 
-    // Enemy de ejemplo
-    const enemyId = 1;
+    const enemyId = Number(enemyPokemonId);
+    if (!Number.isFinite(enemyId) || enemyId <= 0) {
+      this.loading.set(false);
+      this.error.set('Selecciona un enemigo válido.');
+      return;
+    }
+
     this.pokemonService.getById(enemyId).subscribe({
       next: (enemyPokemon) => {
         if (!enemyPokemon) {
@@ -225,45 +278,82 @@ export class Combat implements OnInit {
     if (!you || !enemy) return;
     if (this.isFinished()) return;
 
-    const result = this.computeDamage({
-      attacker: you.pokemon,
-      defender: enemy.pokemon,
-      move,
-      level: you.level,
-    });
-
-    const dmg = Math.min(enemy.hpCurrent, result.damage);
-    this.enemy.set({ ...enemy, hpCurrent: enemy.hpCurrent - dmg });
-    this.log.update((prev) => [
-      { actor: 'you', moveName: move.name, damage: dmg, effectiveness: result.effectiveness, stab: result.stab },
-      ...prev,
-    ]);
-
-    const afterEnemy = this.enemy();
-    if (!afterEnemy || afterEnemy.hpCurrent <= 0) return;
-
-    // Turno enemigo (aleatorio)
+    // Elegir movimiento enemigo al inicio del turno (para poder decidir orden).
     const enemyMove = this.pickRandomMove(this.enemyMoves());
     if (!enemyMove) return;
 
-    const counter = this.computeDamage({
-      attacker: enemy.pokemon,
-      defender: you.pokemon,
-      move: enemyMove,
-      level: enemy.level,
+    // Orden del turno según Speed (desempate aleatorio).
+    const yourSpeed = this.getBattleSpeed(you);
+    const enemySpeed = this.getBattleSpeed(enemy);
+    const youGoFirst =
+      yourSpeed > enemySpeed || (yourSpeed === enemySpeed && Math.random() < 0.5);
+
+    if (youGoFirst) {
+      this.performAttack({ actor: 'you', move });
+
+      const afterEnemy = this.enemy();
+      if (!afterEnemy || afterEnemy.hpCurrent <= 0) return;
+
+      this.performAttack({ actor: 'enemy', move: enemyMove });
+      return;
+    }
+
+    // Enemigo va primero
+    this.performAttack({ actor: 'enemy', move: enemyMove });
+
+    const afterYou = this.you();
+    if (!afterYou || afterYou.hpCurrent <= 0) return;
+
+    this.performAttack({ actor: 'you', move });
+    return;
+  }
+
+  private getBattleSpeed(p: BattlePokemon): number {
+    return this.calcStat(p.pokemon.speed, this.iv, this.ev, p.level);
+  }
+
+  private performAttack(params: { actor: 'you' | 'enemy'; move: MoveModel }): void {
+    const attackerState = params.actor === 'you' ? this.you() : this.enemy();
+    const defenderState = params.actor === 'you' ? this.enemy() : this.you();
+    if (!attackerState || !defenderState) return;
+    if (attackerState.hpCurrent <= 0 || defenderState.hpCurrent <= 0) return;
+
+    const result = this.computeDamage({
+      attacker: attackerState.pokemon,
+      defender: defenderState.pokemon,
+      move: params.move,
+      level: attackerState.level,
     });
 
-    const counterDmg = Math.min(you.hpCurrent, counter.damage);
-    this.you.set({ ...you, hpCurrent: you.hpCurrent - counterDmg });
+    const dmg = Math.min(defenderState.hpCurrent, result.damage);
+    const updatedDefender: BattlePokemon = {
+      ...defenderState,
+      hpCurrent: defenderState.hpCurrent - dmg,
+    };
+
+    if (params.actor === 'you') {
+      this.enemy.set(updatedDefender);
+    } else {
+      this.you.set(updatedDefender);
+    }
+
     this.log.update((prev) => [
-      { actor: 'enemy', moveName: enemyMove.name, damage: counterDmg, effectiveness: counter.effectiveness, stab: counter.stab },
+      {
+        actor: params.actor,
+        moveName: params.move.name,
+        damage: dmg,
+        crit: result.crit,
+        roll: result.roll,
+        effectiveness: result.effectiveness,
+        stab: result.stab,
+      },
       ...prev,
     ]);
   }
 
   /** Reinicia el combate manteniendo el Pokémon seleccionado. */
   resetBattle(): void {
-    this.setupBattle(this.selectedPokemonId());
+    this.setupBattle(this.selectedPokemonId(), this.selectedEnemyId());
   }
 
   // --- Helpers
@@ -373,9 +463,9 @@ export class Combat implements OnInit {
 
   /** Efectividad por tipos (si hay 2, multiplica). */
   private getEffectiveness(attackingType: string, defender: PokemonModel): number {
-    const atk = String(attackingType ?? '');
-    const d1 = String(defender?.type1 ?? '');
-    const d2 = defender?.type2 ? String(defender.type2) : '';
+    const atk = this.normalizeTypeName(attackingType);
+    const d1 = this.normalizeTypeName(defender?.type1);
+    const d2 = defender?.type2 ? this.normalizeTypeName(defender.type2) : '';
 
     const lookup = this.typeRows();
 
@@ -385,11 +475,14 @@ export class Combat implements OnInit {
     return mult1 * mult2;
   }
 
+  private normalizeTypeName(value: unknown): string {
+    return String(value ?? '').trim().toUpperCase();
+  }
+
   private findMultiplier(rows: TypeEffectivenessRow[], atk: string, def: string): number {
     if (!atk || !def) return 1;
-    const row = (rows ?? []).find(
-      (r) => String(r.attacking_type) === atk && String(r.defender_type) === def,
-    );
+
+    const row = (rows ?? []).find((r) => r.attacking_type === atk && r.defender_type === def);
     const m = Number(row?.multiplier);
     return Number.isFinite(m) ? m : 1;
   }
@@ -400,7 +493,7 @@ export class Combat implements OnInit {
     defender: PokemonModel;
     move: MoveModel;
     level: number;
-  }): { damage: number; stab: number; effectiveness: number } {
+  }): { damage: number; crit: boolean; roll: number; stab: number; effectiveness: number } {
     const { attacker, defender, move } = params;
 
     const Nivel = Number(params.level) || this.level;
@@ -426,19 +519,25 @@ export class Combat implements OnInit {
     const A = Math.max(1, attackStat);
     const D = Math.max(1, defenseStat);
 
+    const crit = Math.random() < 0.0417; // 4.17% de probabilidad de crítico
+    const roll = +(Math.random() * (1.00 - 0.85) + 0.85).toFixed(2);  // Baremo entre 0.85 y 1.00 (el + convierte a número porque toFixed devuelve string)
+
     const stab = this.hasStab(attacker, move) ? 1.5 : 1;
     const effectiveness = this.getEffectiveness(move.type, defender);
 
     const base = ((((2 * Nivel) / 5) + 2) * Poder * (A / D)) / 50 + 2;
-    const raw = base * stab * effectiveness;
+    const raw = base * (crit ? 1.5 : 1) * roll * stab * effectiveness;
 
     const damage = Math.max(1, Math.floor(raw));
-    return { damage, stab, effectiveness };
+    return { damage, crit, roll, stab, effectiveness };
   }
 
   private hasStab(attacker: PokemonModel, move: MoveModel): boolean {
-    const moveType = String(move?.type ?? '');
-    return moveType === String(attacker?.type1 ?? '') || moveType === String(attacker?.type2 ?? '');
+    const moveType = this.normalizeTypeName(move?.type);
+    return (
+      moveType === this.normalizeTypeName(attacker?.type1) ||
+      moveType === this.normalizeTypeName(attacker?.type2)
+    );
   }
 
   formatMoveName(name: string | null | undefined): string {

@@ -40,6 +40,7 @@
 			</label>
 
 			<button type="button" class="btn" (click)="resetBattle()">Reiniciar</button>
+			<button type="button" class="btn" (click)="openEnemyPicker()">Elegir enemigo</button>
 		</div>
 
 		@if (isReady()) {
@@ -71,7 +72,7 @@
 				</div>
 
 				<div class="pokemon-side">
-					<h2 class="side-title">Enemigo (ejemplo)</h2>
+					<h2 class="side-title">Enemigo</h2>
 					<div class="pokemon-card">
 						<img
 							class="sprite"
@@ -145,7 +146,12 @@
 								<span class="text">
 									usa <strong>{{ formatMoveName(e.moveName) }}</strong>
 									y hace <strong>{{ e.damage }}</strong>
-									(STAB {{ e.stab }}, {{ formatEffectiveness(e.effectiveness) }})
+
+									@if (e.crit) {
+										(Crítico!! 1.5, ROLL {{ e.roll }}, STAB {{ e.stab }}, EFECTIVIDAD {{ formatEffectiveness(e.effectiveness) }})
+									}@else {
+										(ROLL {{ e.roll }}, STAB {{ e.stab }}, EFECTIVIDAD {{ formatEffectiveness(e.effectiveness) }})
+									}
 								</span>
 							</li>
 						}
