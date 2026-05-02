@@ -16,7 +16,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { TeamDetailDialog } from '../team-detail-dialog/team-detail-dialog';
+import { PokemonPickerDialog } from '../../components/pokemon-picker-dialog/pokemon-picker-dialog';
 
 type SortOption = 'name' | 'power' | 'accuracy' | 'pp';
 
@@ -118,8 +118,12 @@ export class TeamDetail implements OnInit {
   // Actualizar el Pokémon seleccionado para reemplazo y abrir el diálogo
   onUpdatePokemon(pokemon: Pokemon) {
     this.selectedPokemonToReplace = pokemon;
-    const dialogRef = this.dialog.open(TeamDetailDialog, {
-      data: { selectedPokemon: pokemon },
+    const dialogRef = this.dialog.open(PokemonPickerDialog, {
+      data: {
+        title: 'Replace Pokemon',
+        subtitle: `Replace "${pokemon.name}" with a new Pokemon:`,
+        actionLabel: 'Replace',
+      },
       width: '980px',
       maxWidth: '96vw',
       panelClass: 'team-detail-dialog-panel',

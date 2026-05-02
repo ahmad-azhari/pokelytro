@@ -53,6 +53,7 @@ export class PokemonList implements OnInit {
   @Output() addPokemon = new EventEmitter<Pokemon>();
 
   @Input() replacePokemon = false;
+  @Input() replaceButtonText = 'Replace';
   @Output() onReplacePokemon = new EventEmitter<Pokemon>();
 
   @ViewChild(FilterPanel) filterPanel?: FilterPanel;
