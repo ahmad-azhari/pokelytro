@@ -384,6 +384,30 @@ export class TeamDetail implements OnInit {
     return name.replace(/-/g, ' ');
   }
 
+  abbreviateType(type: string): string {
+    const abbreviations: { [key: string]: string } = {
+      'Normal': 'Nor',
+      'Fire': 'Fir',
+      'Water': 'Wat',
+      'Grass': 'Gra',
+      'Electric': 'Ele',
+      'Ice': 'Ice',
+      'Fighting': 'Fig',
+      'Poison': 'Poi',
+      'Ground': 'Gro',
+      'Flying': 'Fly',
+      'Psychic': 'Psy',
+      'Bug': 'Bug',
+      'Rock': 'Roc',
+      'Ghost': 'Gho',
+      'Dragon': 'Dra',
+      'Dark': 'Dar',
+      'Steel': 'Ste',
+      'Fairy': 'Fai'
+    };
+    return abbreviations[type] || type.substring(0, 3).toUpperCase();
+  }
+
   private syncTeamPokemons() {
     const map = new Map(this.allPokemons.map((p) => [p.id, p]));
     this.teamEntries = this.buildTeamPokemonEntries();
