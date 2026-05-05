@@ -94,24 +94,6 @@
   }
 }
 
-.team-item {
-  border-radius: 0.5rem;
-}
-
-.actual-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  gap: 0.75rem;
-  padding: 0.6rem;
-  margin: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.04);
-  width: 100%;
-  min-width: 0;
-}
-
 .equipo-img {
   grid-row: 1;
   grid-column: 1;
@@ -191,18 +173,6 @@
   background: rgba(24, 144, 255, 0.35);
 }
 
-.move-editor-menu {
-  position: absolute;
-  background: rgba(17, 23, 39, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.45rem;
-  padding: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  z-index: 100;
-}
-
 .global-move-picker {
   margin-top: 1.25rem;
   padding: 1rem;
@@ -263,7 +233,10 @@
 }
 
 .btn-add-move,
-.btn-cancel-move {
+.btn-cancel-move,
+.btn-replace-move,
+.btn-delete-move,
+.btn-close-editor {
   border: none;
   border-radius: 0.35rem;
   padding: 0.35rem 0.55rem;
@@ -285,6 +258,31 @@
 
 .btn-cancel-move:hover {
   background: #cf1322;
+}
+
+.btn-replace-move {
+  background: #1890ff;
+}
+
+.btn-replace-move:hover {
+  background: #0050b3;
+}
+
+.btn-delete-move {
+  background: #d9363e;
+}
+
+.btn-delete-move:hover {
+  background: #ff7875;
+}
+
+.btn-close-editor {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.btn-close-editor:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .type .abbr-text {
@@ -408,49 +406,9 @@
   align-items: center;
 }
 
-.btn-replace-move,
-.btn-delete-move,
-.btn-close-editor {
-  border: none;
-  border-radius: 0.35rem;
-  padding: 0.4rem 0.75rem;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-.btn-replace-move {
-  background: #1890ff;
-}
-.btn-replace-move:hover {
-  background: #0050b3;
-}
-.btn-delete-move {
-  background: #d9363e;
-}
-.btn-delete-move:hover {
-  background: #ff7875;
-}
-.btn-close-editor {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.85);
-}
-.btn-close-editor:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-.btn-replace {
-  background-color: #b68c02;
-  color: white;
-  border: 1px solid #fff;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.btn-replace:hover {
-  background-color: #0056b3;
-}
-.btn {
+.btn,
+.btn-replace,
+.btn-volver {
   background-color: #6c757d;
   color: white;
   border: none;
@@ -459,8 +417,14 @@
   cursor: pointer;
   font-weight: 600;
 }
-.btn-back:hover {
-  background-color: #5a6268;
+
+.btn-replace {
+  background-color: #b68c02;
+  border: 1px solid #fff;
+}
+
+.btn-replace:hover {
+  background-color: #0056b3;
 }
 
 .pokemon-types {
@@ -491,16 +455,6 @@
   color: #fff;
 }
 
-.replace-section {
-  padding-top: 1rem;
-}
-
-.replace-content,
-.replace-placeholder {
-  height: 600px;
-  overflow: auto;
-}
-
 .error-banner {
   background-color: #ff4d4f;
   color: white;
@@ -522,17 +476,41 @@
   margin: 0;
 }
 
-.btn-edit-name {
+.btn-edit-name,
+.btn-save,
+.btn-cancel {
   padding: 0.5rem 1rem;
-  background-color: #1890ff;
-  color: white;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.9rem;
 }
+
+.btn-edit-name {
+  background-color: #1890ff;
+  color: white;
+}
+
 .btn-edit-name:hover {
   background-color: #0050b3;
+}
+
+.btn-save {
+  background-color: #389e0d;
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: #52c41a;
+}
+
+.btn-cancel {
+  background-color: #d9363e;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #ff7875;
 }
 
 .edit-name-form {
@@ -555,39 +533,6 @@
 .name-input:focus {
   outline: none;
   border-color: #0050b3;
-}
-
-.btn-save,
-.btn-cancel {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-.btn-save {
-  background-color: #389e0d;
-  color: white;
-}
-.btn-save:hover {
-  background-color: #52c41a;
-}
-.btn-cancel {
-  background-color: #d9363e;
-  color: white;
-}
-.btn-volver {
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-cancel:hover {
-  background-color: #ff7875;
 }
 
 .pokemon-img-link:hover {

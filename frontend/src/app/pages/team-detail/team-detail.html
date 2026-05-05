@@ -36,7 +36,7 @@
                 />
               </a>
               <div class="equipo-info">
-                <span class="equipo-name">{{ pokemon.id }} - {{ pokemon.name }}</span>
+                <span class="equipo-name">{{ pokemon.name }}</span>
                 <div class="pokemon-types">
                   <span class="type" [ngClass]="pokemon.type1">
                     <span class="full-text">{{ pokemon.type1 }}</span>
@@ -122,7 +122,7 @@
           <section class="global-move-picker">
             <div class="global-move-picker-header">
               <h4>
-                Available moves for {{ activeMovePickerPokemonId }} -
+                Available moves for
                 {{ getActiveMovePickerPokemonName() }}
               </h4>
               <button class="btn-cancel-move" (click)="closeMovePicker()">Close</button>
