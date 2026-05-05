@@ -33,16 +33,19 @@
 
 .select {
   padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: white;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  cursor: pointer;
 }
 
 .btn {
   padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
   cursor: pointer;
 }
 
@@ -69,9 +72,9 @@
   gap: 12px;
   align-items: center;
   padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .sprite {
@@ -93,10 +96,15 @@
 
 .type {
   padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: 0.3rem;
+  font-weight: normal;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--type-color, transparent);
+  border-color: var(--type-color, currentColor);
+  color: #fff;
+}
+
+.stats {
 }
 
 .hp {
@@ -124,10 +132,13 @@
 }
 
 .result {
+  text-align: center;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  color: #fff;
   margin: 6px 0 12px;
 }
 
@@ -154,10 +165,21 @@
 .move-btn {
   text-align: left;
   padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
+  color: #fff;
+}
+
+.move-type {
+  padding: 4px 8px;
+  border-radius: 0.3rem;
+  font-weight: normal;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--type-color, transparent);
+  border-color: var(--type-color, currentColor);
+  color: #fff;
 }
 
 .move-btn:disabled {
@@ -175,6 +197,8 @@
   margin-top: 6px;
   font-size: 12px;
   opacity: 0.9;
+  justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
 .log {
@@ -196,9 +220,11 @@
 
 .log-entry {
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  color: #fff;
   display: flex;
   gap: 10px;
 }
