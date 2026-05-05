@@ -196,11 +196,11 @@ router.put("/:id/profile-image", protect, async (req, res) => {
     if (
       typeof profileImage !== "number" ||
       profileImage < 1 ||
-      profileImage > 10
+      profileImage > 20
     ) {
       return res
         .status(400)
-        .json({ message: "profileImage debe ser un número entre 1 y 10." });
+        .json({ message: "profileImage debe ser un número entre 1 y 20." });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
