@@ -2,13 +2,18 @@
   <div class="dialog-actions">
     <button mat-flat-button (click)="onCancel()">Cancel</button>
   </div>
-  <h2 class="dialog-title">Replace Pokemon</h2>
-  <p class="dialog-subtitle">Replace "{{ data.selectedPokemon.name }}" with a new Pokemon:</p>
+
+  <h2 class="dialog-title">{{ data.title }}</h2>
+  @if (data.subtitle) {
+    <p class="dialog-subtitle">{{ data.subtitle }}</p>
+  }
+
   <div class="dialog-list">
     <app-pokemon-list
       [teamDetails]="true"
       [replacePokemon]="true"
-      (onReplacePokemon)="onReplace($event)"
+      [replaceButtonText]="data.actionLabel ?? 'Select'"
+      (onReplacePokemon)="onPick($event)"
     ></app-pokemon-list>
   </div>
 </div>

@@ -5,7 +5,8 @@ import { environment } from '../../../environments/environment';
 import { ApiConfigService } from '../api-config.service';
 
 export interface MoveModel {
-  id: string;
+  _id: string;
+  id: number;
   name: string;
   power: number;
   type: string;
@@ -19,7 +20,7 @@ export interface MoveModel {
 @Injectable({
   providedIn: 'root',
 })
-export class Move {
+export class MoveService {
   private apiConfigService = inject(ApiConfigService);
 
   constructor(private http: HttpClient) {}
