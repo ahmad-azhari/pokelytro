@@ -9,6 +9,8 @@ import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+process.env['NG_ALLOWED_HOSTS'] = 'localhost';
+
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 

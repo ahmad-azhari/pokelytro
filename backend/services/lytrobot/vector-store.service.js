@@ -1,7 +1,7 @@
 const KnowledgeChunk = require("../../models/KnowledgeChunk");
 const Pokemon = require("../../models/Pokemon");
 const Type = require("../../models/Type");
-const { embedText } = require("./embedding.service");
+const EmbeddingService = require("./EmbeddingService");
 
 let isBuilding = false;
 let isReady = false;
@@ -82,7 +82,7 @@ async function buildKnowledgeBase() {
     const operations = [];
 
     for (const chunk of chunks) {
-      const embedding = await embedText(chunk.text);
+      const embedding = await EmbeddingService.generateEmbedding(chunk.text);
       operations.push({
         replaceOne: {
           filter: { chunkId: chunk.chunkId },
@@ -112,7 +112,7 @@ async function retrieveKnowledge(query, topK = 6) {
     await buildKnowledgeBase();
   }
 
-  const queryEmbedding = await embedText(query);
+  const queryEmbedding = await EmbeddingService.generateEmbedding(query);
   const chunks = await KnowledgeChunk.find({}, { embedding: 1, title: 1, text: 1, sourceType: 1, sourceId: 1, metadata: 1 }).lean();
 
   const scored = chunks

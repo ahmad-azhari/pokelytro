@@ -43,6 +43,7 @@ class LLMService {
 
       return responseText;
     } catch (error) {
+      console.error("GROQ ERROR:", error);
       if (error.status === 429) {
         throw new Error(
           'The AI service is receiving many requests. Please try again in a moment.'
