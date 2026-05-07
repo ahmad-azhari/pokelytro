@@ -1,24 +1,19 @@
 import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Pokemon } from '../../models/pokemon/pokemon';
-import { ActivatedRoute, Router } from '@angular/router';
-import { RouterLink } from '@angular/router';
-import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
-import { FilterPanel } from '../../components/filter-panel/filter-panel';
-
-import { Team as TeamService } from '../../services/team/team';
-import { Pokemon as PokemonService } from '../../services/pokemon/pokemon';
-import { MoveService, MoveModel } from '../../services/move/move';
-import { Team as TeamModel, TeamPokemonSlot } from '../../models/team/team';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+
+import { Pokemon } from '../../models/pokemon/pokemon';
+import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
+import { FilterPanel } from '../../components/filter-panel/filter-panel';
 import { PokemonPickerDialog } from '../../components/pokemon-picker-dialog/pokemon-picker-dialog';
 
-type SortOption = 'name' | 'power' | 'accuracy' | 'pp';
+import { TeamDetailFacade } from '../../facades/team-detail.facade';
+import { MovePickerService } from '../../services/move-picker/move-picker.service';
 
 @Component({
   selector: 'app-team-detail',
@@ -26,47 +21,21 @@ type SortOption = 'name' | 'power' | 'accuracy' | 'pp';
   imports: [CommonModule, FormsModule, RouterLink, MatDialogModule, MatButtonModule, PaginationControls, FilterPanel],
   templateUrl: './team-detail.html',
   styleUrls: ['./team-detail.css'],
+  providers: [TeamDetailFacade, MovePickerService],
 })
 export class TeamDetail implements OnInit {
-  private teamService = inject(TeamService);
-  private pokemonService = inject(PokemonService);
-  private moveService = inject(MoveService);
+  protected facade = inject(TeamDetailFacade);
+  protected movePicker = inject(MovePickerService);
+
   private route = inject(ActivatedRoute);
-  router = inject(Router);
-  private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
-  team: TeamModel | null = null;
-  teamPokemons: Pokemon[] = [];
-  allPokemons: Pokemon[] = [];
-  allMoves: MoveModel[] = [];
-  teamEntries: TeamPokemonSlot[] = [];
-  selectedPokemonToReplace: Pokemon | null = null;
-  errorMessage: string | null = null;
-  isEditingName: boolean = false;
-  newTeamName: string = '';
+  router = inject(Router);
   moveSlots = [0, 1, 2, 3];
-  activeMovePickerPokemonId: number | null = null;
-  replacingMoveId: string | null = null;
-  availableMovesForSelectedPokemon: MoveModel[] = [];
-  editingMoveSlot: { pokemonId: number; slotIndex: number } | null = null;
-  isLoading = true;
 
-  // Variables del filtrado/paginación
-  movesSearchTerm = '';
-  selectedMoveType = '';
-  selectedMoveDamageClass = '';
-  moveSortBy: SortOption = 'name';
-  moveTypes: string[] = [];
-  moveDamageClasses: string[] = [];
-  movePage = 1;
-  movePageSize = 32;
-  moveTotalPages = 1;
-  compatibleMovesForSelectedPokemon: MoveModel[] = [];
-  filteredAvailableMoves: MoveModel[] = [];
   @ViewChild(FilterPanel) moveFilterPanel?: FilterPanel;
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
       const teamId = params['teamId'] as string;
 
@@ -76,48 +45,12 @@ export class TeamDetail implements OnInit {
         return;
       }
 
-      // Cargar team y movimientos en paralelo
-      this.teamService.getById(teamId).subscribe({
-        next: (team) => {
-          this.team = team;
-
-          if (!this.team) {
-            alert('Team not found');
-            this.router.navigate(['/team-builder']);
-            return;
-          }
-
-          // Extraer IDs únicos del equipo
-          const pokemonIds = (this.team.pokemons ?? [])
-            .map((entry) => entry.pokemonId)
-            .filter((id) => Number.isFinite(id));
-
-          // Cargar solo los Pokémon del equipo
-          if (pokemonIds.length > 0) {
-            this.pokemonService.getByIds(pokemonIds).subscribe({
-              next: (pokemons) => {
-                this.allPokemons = pokemons;
-                this.syncTeamPokemons();
-              },
-            });
-          }
-
-          // Cargar movimientos
-          this.moveService.get().subscribe({
-            next: (moves) => {
-              this.allMoves = moves;
-              this.extractMoveFilterValues();
-              this.isLoading = false;
-            },
-          });
-        },
-      });
+      this.facade.load(teamId);
     });
   }
 
-  // Actualizar el Pokémon seleccionado para reemplazo y abrir el diálogo
-  onUpdatePokemon(pokemon: Pokemon) {
-    this.selectedPokemonToReplace = pokemon;
+  // ── Pokemon ────────────────────────────────────────────────────────────────
+  onUpdatePokemon(pokemon: Pokemon): void {
     const dialogRef = this.dialog.open(PokemonPickerDialog, {
       data: {
         title: 'Replace Pokemon',
@@ -130,399 +63,151 @@ export class TeamDetail implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe((result: Pokemon | null) => {
-      if (result) {
-        this.onReplacePokemon(result);
-      } else {
-        this.selectedPokemonToReplace = null;
-      }
+      if (result) this.facade.replacePokemon(pokemon, result);
     });
   }
 
-  onReplacePokemon(newPokemon: Pokemon) {
-    if (!this.team || !this.selectedPokemonToReplace) return;
+  // ── Name editing ───────────────────────────────────────────────────────────
+  onEditName(): void { this.facade.startEditName(); }
+  onSaveName(): void { this.facade.saveName(this.facade.newTeamName()); }
+  cancelEditName(): void { this.facade.cancelEditName(); }
 
-    const oldId = this.selectedPokemonToReplace.id;
-    const entries = this.teamEntries;
-    const idx = entries.findIndex((entry) => entry.pokemonId === oldId);
-    if (idx === -1) return;
+  // ── Move picker ────────────────────────────────────────────────────────────
+  onOpenMovePicker(pokemon: Pokemon): void {
+    const currentMoves = this.facade.getCurrentMovesForPokemon(pokemon.id);
 
-    const previousEntries = [...entries];
-    const updatedEntries = [...entries];
-    updatedEntries[idx] = {
-      pokemonId: newPokemon.id,
-      moves: [],
-    };
-
-    this.teamService
-      .put(this.team._id!, { ...this.team, pokemons: updatedEntries })
-      .subscribe({
-        next: (response) => {
-          this.team = response;
-
-          const hadNewPokemon = this.allPokemons.some((pokemon) => pokemon.id === newPokemon.id);
-          if (!hadNewPokemon) {
-            this.allPokemons = this.allPokemons
-              .filter((pokemon) => pokemon.id !== oldId)
-              .concat(newPokemon);
-          }
-
-          this.syncTeamPokemons();
-          this.selectedPokemonToReplace = null;
-          this.closeMovePicker();
-          this.errorMessage = null;
-          this.mostrarNotificacion('Pokemon replaced successfully!');
-        },
-        error: (err) => {
-          this.errorMessage = err?.error?.message || 'Could not update the team';
-          this.team!.pokemons = previousEntries;
-          this.selectedPokemonToReplace = null;
-        },
-      });
-  }
-
-  // Editar el nombre del equipo
-  onEditName() {
-    this.isEditingName = true;
-    this.newTeamName = this.team?.name || '';
-  }
-
-  onSaveName() {
-    if (!this.team || !this.newTeamName.trim()) {
-      this.errorMessage = 'Team name cannot be empty';
+    if (!this.movePicker.state().replacingMoveId && currentMoves.length >= 4) {
+      this._notify('This Pokemon already has 4 moves');
       return;
     }
 
-    this.teamService
-      .put(this.team._id!, { ...this.team, name: this.newTeamName })
-      .subscribe({
-        next: (response) => {
-          this.team = response;
-          this.cancelEditName();
-          this.errorMessage = null;
-          this.mostrarNotificacion('Team name updated successfully!');
-        },
-        error: (err) => {
-          this.errorMessage = err?.error?.message || 'Could not update the team name';
-        },
-      });
+    const opened = this.movePicker.open(pokemon, this.facade.allMoves(), currentMoves);
+    if (!opened) this._notify('No available moves for this Pokemon');
+
+    this.movePicker.initFilterValues(this.facade.allMoves());
   }
 
-  cancelEditName() {
-    this.isEditingName = false;
-    this.newTeamName = '';
+  onAddMoveToPokemon(moveId: string): void {
+    const { activePokemonId, replacingMoveId } = this.movePicker.state();
+    if (!activePokemonId || !moveId) return;
+
+    if (replacingMoveId) {
+      this.facade.replaceMove(activePokemonId, replacingMoveId, moveId);
+    } else {
+      this.facade.addMove(activePokemonId, moveId);
+    }
+
+    this.movePicker.close();
   }
 
-  // Manejo de movimientos
-  getMoveIdForSlot(pokemonId: number, slotIndex: number): string | null {
-    const entry = this.teamEntries.find((item) => item.pokemonId === pokemonId);
-    return entry?.moves[slotIndex] || null;
+  closeMovePicker(): void { this.movePicker.close(); }
+
+  // ── Move slot editor ───────────────────────────────────────────────────────
+  onOpenMoveEditor(pokemon: Pokemon, slotIndex: number): void {
+    const moveId = this.facade.getMoveIdForSlot(pokemon.id, slotIndex);
+    if (!moveId) return;
+    this.facade.editingMoveSlot.set({ pokemonId: pokemon.id, slotIndex });
   }
 
+  onDeleteMove(): void { this.facade.deleteMove(); }
+
+  onReplaceMove(): void {
+    const slot = this.facade.editingMoveSlot();
+    if (!slot) return;
+
+    const moveId = this.facade.getMoveIdForSlot(slot.pokemonId, slot.slotIndex);
+    if (!moveId) return;
+
+    const pokemon = this.facade.teamPokemons().find((p) => p.id === slot.pokemonId)!;
+    const currentMoves = this.facade.getCurrentMovesForPokemon(slot.pokemonId);
+
+    this.movePicker.open(pokemon, this.facade.allMoves(), currentMoves, moveId);
+    this.movePicker.initFilterValues(this.facade.allMoves());
+    this.facade.editingMoveSlot.set(null);
+  }
+
+  // ── Template helpers ───────────────────────────────────────────────────────
   getMoveNameForSlot(pokemonId: number, slotIndex: number): string {
-    const moveId = this.getMoveIdForSlot(pokemonId, slotIndex);
-    if (!moveId) return '+';
-    const moveName = this.allMoves.find((m) => m._id === moveId)?.name || 'Unknown move';
-    return this.formatMoveName(moveName);
-  }
-
-  onOpenMovePicker(pokemon: Pokemon) {
-    if (!this.team?._id) return;
-
-    const entry = this.teamEntries.find((item) => item.pokemonId === pokemon.id);
-    if (!entry) return;
-
-    const isReplacing = !!this.replacingMoveId;
-
-    if (!isReplacing && entry.moves.length >= 4) {
-      this.mostrarNotificacion('This Pokemon already has 4 moves');
-      return;
-    }
-
-    const usedMoveIds = new Set(entry.moves.filter((id) => id !== this.replacingMoveId));
-    const compatibleMoves = this.allMoves.filter(
-      (move) => move.learned_by_ids?.includes(pokemon.id) && !usedMoveIds.has(move._id),
-    );
-
-    if (compatibleMoves.length === 0) {
-      this.mostrarNotificacion('No available moves for this Pokemon');
-      return;
-    }
-
-    this.activeMovePickerPokemonId = pokemon.id;
-    // Resetear filtros y búsqueda
-    this.movesSearchTerm = '';
-    this.selectedMoveType = '';
-    this.selectedMoveDamageClass = '';
-    this.moveSortBy = 'name';
-    this.movePage = 1;
-    this.compatibleMovesForSelectedPokemon = compatibleMoves;
-    this.filteredAvailableMoves = compatibleMoves;
-    this.extractMoveFilterValues();
-    this.applyMoveFilters();
-    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
-  }
-
-  onAddMoveToPokemon(moveId: string) {
-    if (!this.team?._id || !this.activeMovePickerPokemonId || !moveId) return;
-
-    if (this.replacingMoveId) {
-      this.teamService
-        .replaceMove(this.team._id, this.activeMovePickerPokemonId, this.replacingMoveId, moveId)
-        .subscribe({
-            next: (response) => {
-            this.team = response;
-            this.syncTeamPokemons();
-            this.closeMovePicker();
-            this.errorMessage = null;
-            this.mostrarNotificacion('Move replaced successfully!');
-          },
-          error: (err) => {
-            this.errorMessage = err?.error?.message || 'Could not replace move';
-          },
-        });
-      return;
-    }
-
-    this.teamService.addMove(this.team._id, this.activeMovePickerPokemonId, moveId).subscribe({
-      next: (response) => {
-        this.team = response;
-        this.syncTeamPokemons();
-        this.closeMovePicker();
-        this.errorMessage = null;
-        this.mostrarNotificacion('Move added successfully!');
-      },
-      error: (err) => {
-        this.errorMessage = err?.error?.message || 'Could not add move';
-      },
-    });
-  }
-
-  closeMovePicker() {
-    this.activeMovePickerPokemonId = null;
-    this.replacingMoveId = null;
-    this.availableMovesForSelectedPokemon = [];
-    this.compatibleMovesForSelectedPokemon = [];
-    this.filteredAvailableMoves = [];
-    this.editingMoveSlot = null;
-  }
-
-  onOpenMoveEditor(pokemon: Pokemon, slotIndex: number) {
-    const moveId = this.getMoveIdForSlot(pokemon.id, slotIndex);
-    if (!moveId) return;
-
-    this.editingMoveSlot = { pokemonId: pokemon.id, slotIndex };
-  }
-
-  onDeleteMove() {
-    if (!this.editingMoveSlot || !this.team?._id) return;
-
-    const moveId = this.getMoveIdForSlot(
-      this.editingMoveSlot.pokemonId,
-      this.editingMoveSlot.slotIndex,
-    );
-    if (!moveId) return;
-
-    this.teamService.removeMove(this.team._id, this.editingMoveSlot.pokemonId, moveId).subscribe({
-      next: (response) => {
-        this.team = response;
-        this.syncTeamPokemons();
-        this.editingMoveSlot = null;
-        this.errorMessage = null;
-        this.mostrarNotificacion('Move deleted successfully!');
-      },
-      error: (err) => {
-        this.errorMessage = err?.error?.message || 'Could not delete move';
-      },
-    });
-  }
-
-  onReplaceMove() {
-    if (!this.editingMoveSlot) return;
-    const moveId = this.getMoveIdForSlot(
-      this.editingMoveSlot.pokemonId,
-      this.editingMoveSlot.slotIndex,
-    );
-    if (!moveId) return;
-
-    this.replacingMoveId = moveId;
-    this.activeMovePickerPokemonId = this.editingMoveSlot.pokemonId;
-    this.onOpenMovePicker(this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)!);
+    return this.facade.getMoveNameForSlot(pokemonId, slotIndex, this.facade.allMoves());
   }
 
   getActiveMovePickerPokemonName(): string {
-    if (!this.activeMovePickerPokemonId) return '';
-    return (
-      this.teamPokemons.find((pokemon) => pokemon.id === this.activeMovePickerPokemonId)?.name ||
-      '#' + this.activeMovePickerPokemonId
-    );
+    const id = this.movePicker.state().activePokemonId;
+    if (!id) return '';
+    return this.facade.teamPokemons().find((p) => p.id === id)?.name || `#${id}`;
   }
 
-  private buildTeamPokemonEntries(): TeamPokemonSlot[] {
-    return (this.team?.pokemons ?? []) as TeamPokemonSlot[];
-  }
-
-  getEditingMove(): MoveModel | undefined {
-    if (!this.editingMoveSlot) return undefined;
-
-    const moveId = this.getMoveIdForSlot(
-      this.editingMoveSlot.pokemonId,
-      this.editingMoveSlot.slotIndex,
-    );
-    return this.allMoves.find((move) => move._id === moveId);
+  getEditingMove() {
+    return this.facade.getEditingMove(this.facade.allMoves());
   }
 
   getEditingPokemonName(): string {
-    if (!this.editingMoveSlot) return '';
-    return (
-      this.teamPokemons.find((p) => p.id === this.editingMoveSlot?.pokemonId)?.name ||
-      '#' + this.editingMoveSlot.pokemonId
-    );
+    const slot = this.facade.editingMoveSlot();
+    if (!slot) return '';
+    return this.facade.teamPokemons().find((p) => p.id === slot.pokemonId)?.name || `#${slot.pokemonId}`;
+  }
+
+  // ── Move picker filters (delegated) ───────────────────────────────────────
+  onMoveSearch(term: string): void { this.movePicker.setSearch(term); }
+  onMoveTypeChange(type: string): void { this.movePicker.setType(type); }
+  onMoveDamageClassChange(dc: string): void { this.movePicker.setDamageClass(dc); }
+  onMoveSortChange(sort: any): void { this.movePicker.setSort(sort); }
+
+  clearMoveFilters(): void {
+    this.movePicker.clearFilters();
+    this.moveFilterPanel?.closeFilters();
+  }
+
+  nextMovePage(): void { this.movePicker.nextPage(); }
+  prevMovePage(): void { this.movePicker.prevPage(); }
+  goToMovePage(target: number): void { this.movePicker.goToPage(target); }
+
+  private _notify(message: string): void {
+    this.facade['_notify']?.(message);
+  }
+
+  // ── Getters de compatibilidad con el HTML existente ───────────────────────
+  // Permiten que el template siga usando las mismas expresiones sin cambios.
+
+  get team() { return this.facade.team(); }
+  get teamPokemons() { return this.facade.teamPokemons(); }
+  get isLoading() { return this.facade.isLoading(); }
+  get errorMessage() { return this.facade.errorMessage(); }
+  get isEditingName() { return this.facade.isEditingName(); }
+
+  get newTeamName() { return this.facade.newTeamName(); }
+  set newTeamName(value: string) { this.facade.newTeamName.set(value); }
+
+  get editingMoveSlot() { return this.facade.editingMoveSlot(); }
+  set editingMoveSlot(value: { pokemonId: number; slotIndex: number } | null) {
+    this.facade.editingMoveSlot.set(value);
+  }
+
+  get activeMovePickerPokemonId() { return this.movePicker.state().activePokemonId; }
+  get movesSearchTerm() { return this.movePicker.state().searchTerm; }
+  set movesSearchTerm(value: string) { this.movePicker.setSearch(value); }
+
+  get selectedMoveType() { return this.movePicker.state().selectedType; }
+  set selectedMoveType(value: string) { this.movePicker.setType(value); }
+
+  get selectedMoveDamageClass() { return this.movePicker.state().selectedDamageClass; }
+  set selectedMoveDamageClass(value: string) { this.movePicker.setDamageClass(value); }
+
+  get moveSortBy() { return this.movePicker.state().sortBy; }
+  set moveSortBy(value: any) { this.movePicker.setSort(value); }
+
+  get movePage() { return this.movePicker.state().page; }
+  get moveTotalPages() { return this.movePicker.state().totalPages; }
+  get moveTypes() { return this.movePicker.moveTypes(); }
+  get moveDamageClasses() { return this.movePicker.moveDamageClasses(); }
+  get availableMovesForSelectedPokemon() { return this.movePicker.state().pagedMoves; }
+
+  getMoveIdForSlot(pokemonId: number, slotIndex: number): string | null {
+    return this.facade.getMoveIdForSlot(pokemonId, slotIndex);
   }
 
   formatMoveName(name: string | null | undefined): string {
     if (!name) return '';
     return name.replace(/-/g, ' ');
-  }
-
-  abbreviateType(type: string): string {
-    const abbreviations: { [key: string]: string } = {
-      'Normal': 'Nor',
-      'Fire': 'Fir',
-      'Water': 'Wat',
-      'Grass': 'Gra',
-      'Electric': 'Ele',
-      'Ice': 'Ice',
-      'Fighting': 'Fig',
-      'Poison': 'Poi',
-      'Ground': 'Gro',
-      'Flying': 'Fly',
-      'Psychic': 'Psy',
-      'Bug': 'Bug',
-      'Rock': 'Roc',
-      'Ghost': 'Gho',
-      'Dragon': 'Dra',
-      'Dark': 'Dar',
-      'Steel': 'Ste',
-      'Fairy': 'Fai'
-    };
-    return abbreviations[type] || type.substring(0, 3).toUpperCase();
-  }
-
-  private syncTeamPokemons() {
-    const map = new Map(this.allPokemons.map((p) => [p.id, p]));
-    this.teamEntries = this.buildTeamPokemonEntries();
-    this.teamPokemons = this.teamEntries.map((entry) => map.get(entry.pokemonId)!).filter(Boolean);
-  }
-
-  mostrarNotificacion(mensaje: string) {
-    this.snackBar.open(mensaje, 'Cerrar', {
-      duration: 3000,
-      verticalPosition: 'top',
-    });
-  }
-
-  // Funciones relacionadas con filtrado/paginación de movimientos en el move picker
-  private extractMoveFilterValues(): void {
-    const typeSet = new Set<string>();
-    const damageClassSet = new Set<string>();
-
-    for (const move of this.allMoves) {
-      if (move.type) typeSet.add(move.type);
-      if (move.damage_class) damageClassSet.add(move.damage_class);
-    }
-
-    this.moveTypes = Array.from(typeSet).sort((a, b) => a.localeCompare(b));
-    this.moveDamageClasses = Array.from(damageClassSet).sort((a, b) => a.localeCompare(b));
-  }
-
-  private applyMoveFilters(): void {
-    const q = this.movesSearchTerm.trim().toLowerCase();
-
-    let filtered = this.compatibleMovesForSelectedPokemon.filter((move) => {
-      const matchesSearch = !q || move.name.toLowerCase().includes(q);
-      const matchesType = !this.selectedMoveType || move.type === this.selectedMoveType;
-      const matchesDamageClass = !this.selectedMoveDamageClass || move.damage_class === this.selectedMoveDamageClass;
-      return matchesSearch && matchesType && matchesDamageClass;
-    });
-
-    if (this.moveSortBy === 'name') {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (this.moveSortBy === 'power') {
-      filtered.sort((a, b) => (b.power || 0) - (a.power || 0) || a.name.localeCompare(b.name));
-    } else if (this.moveSortBy === 'accuracy') {
-      filtered.sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0) || a.name.localeCompare(b.name));
-    } else if (this.moveSortBy === 'pp') {
-      filtered.sort((a, b) => (b.pp || 0) - (a.pp || 0) || a.name.localeCompare(b.name));
-    }
-
-    this.filteredAvailableMoves = filtered;
-    this.recomputeMoveTotalPages();
-    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
-  }
-
-  private recomputeMoveTotalPages(): void {
-    const count = this.filteredAvailableMoves.length;
-    this.moveTotalPages = PaginationControls.calculateTotalPages(count, this.movePageSize);
-    this.movePage = PaginationControls.normalizePage(this.movePage, this.moveTotalPages);
-  }
-
-  get pagedAvailableMoves(): MoveModel[] {
-    return PaginationControls.getPagedItems(this.filteredAvailableMoves, this.movePage, this.movePageSize);
-  }
-
-  onMoveSearch(term: string): void {
-    this.movesSearchTerm = term;
-    this.movePage = 1;
-    this.applyMoveFilters();
-  }
-
-  onMoveTypeChange(type: string): void {
-    this.selectedMoveType = type;
-    this.movePage = 1;
-    this.applyMoveFilters();
-  }
-
-  onMoveDamageClassChange(damageClass: string): void {
-    this.selectedMoveDamageClass = damageClass;
-    this.movePage = 1;
-    this.applyMoveFilters();
-  }
-
-  onMoveSortChange(sort: SortOption): void {
-    this.moveSortBy = sort;
-    this.movePage = 1;
-    this.applyMoveFilters();
-  }
-
-  clearMoveFilters(): void {
-    this.selectedMoveType = '';
-    this.selectedMoveDamageClass = '';
-    this.moveSortBy = 'name';
-    this.movesSearchTerm = '';
-    this.movePage = 1;
-    this.applyMoveFilters();
-    this.moveFilterPanel?.closeFilters();
-  }
-
-  nextMovePage(): void {
-    const nextPage = PaginationControls.getNextPage(this.movePage, this.moveTotalPages);
-    if (nextPage !== undefined) {
-      this.movePage = nextPage;
-      this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
-    }
-  }
-
-  prevMovePage(): void {
-    const prevPage = PaginationControls.getPrevPage(this.movePage);
-    if (prevPage !== undefined) {
-      this.movePage = prevPage;
-      this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
-    }
-  }
-
-  goToMovePage(target: number): void {
-    if (!Number.isFinite(target)) return;
-    this.movePage = PaginationControls.normalizePage(target, this.moveTotalPages);
-    this.availableMovesForSelectedPokemon = this.pagedAvailableMoves;
   }
 }
