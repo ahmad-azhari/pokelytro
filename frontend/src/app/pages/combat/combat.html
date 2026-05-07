@@ -44,32 +44,27 @@
     </div>
 
     @if (isReady()) {
+      @let myPokemon = you();
+      @let enemyPokemon = enemy();
+
       <div class="arena">
         <div class="pokemon-side">
           <h2 class="side-title">You</h2>
           <div class="pokemon-card">
-            <img
-              class="sprite"
-              [src]="'/images/' + you()!.pokemon.id + '.png'"
-              [alt]="you()!.pokemon.name"
-            />
+            <img class="sprite" [src]="'/images/' + myPokemon!.pokemon.id + '.png'" [alt]="myPokemon!.pokemon.name" />
             <div class="info">
-              <div class="name">{{ you()!.pokemon.name }}</div>
+              <div class="name">{{ myPokemon!.pokemon.name }}</div>
               <div class="types">
-                <span class="type" [ngClass]="you()!.pokemon.type1">{{
-                  you()!.pokemon.type1
-                }}</span>
-                @if (you()!.pokemon.type2) {
-                  <span class="type" [ngClass]="you()!.pokemon.type2">{{
-                    you()!.pokemon.type2
-                  }}</span>
+                <span class="type" [ngClass]="myPokemon!.pokemon.type1">{{ myPokemon!.pokemon.type1 }}</span>
+                @if (myPokemon!.pokemon.type2) {
+                  <span class="type" [ngClass]="myPokemon!.pokemon.type2">{{ myPokemon!.pokemon.type2 }}</span>
                 }
               </div>
               <div class="hp">
                 <div class="hp-bar">
-                  <div class="hp-fill" [style.width.%]="hpPct(you())"></div>
+                  <div class="hp-fill" [style.width.%]="hpPct(myPokemon)"></div>
                 </div>
-                <div class="hp-text">{{ you()!.hpCurrent }} / {{ you()!.hpMax }}</div>
+                <div class="hp-text">{{ myPokemon!.hpCurrent }} / {{ myPokemon!.hpMax }}</div>
               </div>
             </div>
           </div>
@@ -78,28 +73,20 @@
         <div class="pokemon-side">
           <h2 class="side-title">Enemy</h2>
           <div class="pokemon-card">
-            <img
-              class="sprite"
-              [src]="'/images/' + enemy()!.pokemon.id + '.png'"
-              [alt]="enemy()!.pokemon.name"
-            />
+            <img class="sprite" [src]="'/images/' + enemyPokemon!.pokemon.id + '.png'" [alt]="enemyPokemon!.pokemon.name" />
             <div class="info">
-              <div class="name">{{ enemy()!.pokemon.name }}</div>
+              <div class="name">{{ enemyPokemon!.pokemon.name }}</div>
               <div class="types">
-                <span class="type" [ngClass]="enemy()!.pokemon.type1">{{
-                  enemy()!.pokemon.type1
-                }}</span>
-                @if (enemy()!.pokemon.type2) {
-                  <span class="type" [ngClass]="enemy()!.pokemon.type2">{{
-                    enemy()!.pokemon.type2
-                  }}</span>
+                <span class="type" [ngClass]="enemyPokemon!.pokemon.type1">{{ enemyPokemon!.pokemon.type1 }}</span>
+                @if (enemyPokemon!.pokemon.type2) {
+                  <span class="type" [ngClass]="enemyPokemon!.pokemon.type2">{{ enemyPokemon!.pokemon.type2 }}</span>
                 }
               </div>
               <div class="hp">
                 <div class="hp-bar">
-                  <div class="hp-fill" [style.width.%]="hpPct(enemy())"></div>
+                  <div class="hp-fill" [style.width.%]="hpPct(enemyPokemon)"></div>
                 </div>
-                <div class="hp-text">{{ enemy()!.hpCurrent }} / {{ enemy()!.hpMax }}</div>
+                <div class="hp-text">{{ enemyPokemon!.hpCurrent }} / {{ enemyPokemon!.hpMax }}</div>
               </div>
             </div>
           </div>
@@ -108,12 +95,10 @@
 
       @if (isFinished()) {
         <div class="result">
-          @if (enemy()!.hpCurrent <= 0 && you()!.hpCurrent > 0) {
-            <strong>You won!</strong>
-          } @else if (you()!.hpCurrent <= 0 && enemy()!.hpCurrent > 0) {
-            <strong>You lost...</strong>
-          } @else {
-            <strong>Battle finished.</strong>
+          @switch (battleResult) {
+            @case ('won')  { <strong>You won!</strong> }
+            @case ('lost') { <strong>You lost...</strong> }
+            @default       { <strong>Battle finished.</strong> }
           }
         </div>
       }
@@ -149,28 +134,15 @@
         } @else {
           <ul class="log-list">
             @for (e of log(); track $index) {
-              <li
-                class="log-entry"
-                [class.enemy]="e.actor === 'enemy'"
-                [class.you]="e.actor === 'you'"
-              >
-                <span class="who">
-                  @if (e.actor === 'you') {
-                    You
-                  } @else {
-                    Enemy
-                  }
-                </span>
+              <li class="log-entry" [class.enemy]="e.actor === 'enemy'" [class.you]="e.actor === 'you'">
+                <span class="who">{{ e.actor === 'you' ? 'You' : 'Enemy' }}</span>
                 <span class="text">
                   use <strong>{{ formatMoveName(e.moveName) }}</strong> and deal
                   <strong>{{ e.damage }}</strong> damage
-
                   @if (e.crit) {
-                    (Critical Hit!! 1.5, ROLL {{ e.roll }}, STAB {{ e.stab }}, EFFECTIVENESS
-                    {{ formatEffectiveness(e.effectiveness) }})
+                    (Critical Hit!! 1.5, ROLL {{ e.roll }}, STAB {{ e.stab }}, EFFECTIVENESS {{ formatEffectiveness(e.effectiveness) }})
                   } @else {
-                    (ROLL {{ e.roll }}, STAB {{ e.stab }}, EFFECTIVENESS
-                    {{ formatEffectiveness(e.effectiveness) }})
+                    (ROLL {{ e.roll }}, STAB {{ e.stab }}, EFFECTIVENESS {{ formatEffectiveness(e.effectiveness) }})
                   }
                 </span>
               </li>
