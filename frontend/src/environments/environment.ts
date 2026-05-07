@@ -8,6 +8,8 @@ export const environment = {
     pokemons: '/api/pokemons',
     teams: '/api/teams',
     types: '/api/types',
-    chatbot: '/api/chatbot/message'
-  }
+    chatbot: '/api/chatbot/message',
+    items: '/api/items',
+    moves: '/api/moves',
+  },
 };
