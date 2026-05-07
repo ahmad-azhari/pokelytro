@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -167,7 +166,6 @@ export class TeamDetail implements OnInit {
   }
 
   // ── Getters de compatibilidad con el HTML existente ───────────────────────
-  // Permiten que el template siga usando las mismas expresiones sin cambios.
 
   get team() { return this.facade.team(); }
   get teamPokemons() { return this.facade.teamPokemons(); }
