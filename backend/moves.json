@@ -17713,16 +17713,5 @@
     "pp": 10,
     "description": "Al entrar en plena armonía con la selva, el usuario cura problemas de estado y restaura PS no solo de sí mismo, sino también de los aliados presentes en el terreno.",
     "learned_by_ids": [893]
-  },
-  {
-    "id": 817,
-    "name": "Light of Ruin",
-    "power": 140,
-    "type": "Fairy",
-    "damage_class": "special",
-    "accuracy": 90,
-    "pp": 5,
-    "description": "Al extraer energía de la Flor Eterna, el usuario lanza un potente rayo de luz. Esto también le causa un daño terrible.",
-    "learned_by_ids": [670.1, 670.2]
   }
 ]
