@@ -5,17 +5,24 @@
   "scripts": {
     "build": "echo 'No build step required'",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.js"
+    "start": "node app.js",
+    "index:pokemon": "node scripts/indexPokemonEmbeddings.js",
+    "index:types": "node scripts/indexTypeMatchupEmbeddings.js",
+    "index:all": "npm run index:pokemon && npm run index:types"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@xenova/transformers": "^2.17.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "groq-sdk": "^1.1.1",
     "jsonwebtoken": "^9.0.3",
+    "mathjs": "^15.1.1",
     "mongoose": "^8.20.0"
   }
 }
