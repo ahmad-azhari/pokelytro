@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ItemService } from '../../services/item/item';
 import { Item } from '../../services/item/item';
@@ -11,7 +11,7 @@ type SortOption = 'name' | 'gen';
 
 @Component({
   selector: 'app-item',
-  imports: [CommonModule, FormsModule, PaginationControls, FilterPanel],
+  imports: [FormsModule, PaginationControls, FilterPanel],
   templateUrl: './item.html',
   styleUrl: './item.css',
 })

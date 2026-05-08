@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject } from '@angular/core';
 import { Type as TypeService, TypeModel as TypeEffectivenessRow } from '../../services/type/type';
 
@@ -11,7 +11,7 @@ type ArrowRow = {
 @Component({
   selector: 'app-types',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './types.html',
   styleUrls: ['./types.css'],
 })
