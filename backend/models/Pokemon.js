@@ -66,6 +66,10 @@ const PokemonSchema = new Schema({
   egg_group1: { type: String, required: true },
   egg_group2: { type: String, required: false },
   evolution_method: { type: String, required: false },
+  embedding_vector: { type: [Number], required: false },
+  embedding_dimension: { type: Number, required: false },
+  embedding_model: { type: String, required: false },
+  embedding_indexed_at: { type: Date, required: false },
 });
 
 module.exports = mongoose.model("pokemons", PokemonSchema);

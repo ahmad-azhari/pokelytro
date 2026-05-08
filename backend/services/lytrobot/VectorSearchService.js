@@ -71,6 +71,39 @@ class VectorSearchService {
 
   async searchTypeMatchupsByEmbedding(embeddingVector, topK = 10, typeFilter = null) {
     try {
+      if (typeFilter && typeFilter.length > 0) {
+        const normalizedTypes = typeFilter.map(t => t.toUpperCase());
+        const matchups = await Type.find({
+          $or: [
+            { atacante: { $in: normalizedTypes } },
+            { defensor: { $in: normalizedTypes } },
+          ],
+        }).lean();
+
+        const directMatchups = matchups.filter(m =>
+          normalizedTypes.includes(m.atacante) && normalizedTypes.includes(m.defensor)
+        );
+        const otherMatchups = matchups.filter(m =>
+          !directMatchups.some(dm => dm._id.equals(m._id))
+        );
+        const sorted = [...directMatchups, ...otherMatchups].slice(0, topK);
+
+        return sorted.map((doc) => ({
+          sourceType: 'type_matchup',
+          sourceId: `${doc.atacante}:${doc.defensor}`,
+          title: `${doc.atacante} vs ${doc.defensor}`,
+          chunkId: `type:${doc.atacante}:${doc.defensor}`,
+          similarity: 1,
+          metadata: {
+            attackingType: doc.atacante,
+            defenderType: doc.defensor,
+            multiplier: doc.multiplicador,
+            effectiveness: this.describeTypeEffectiveness(doc.multiplicador),
+          },
+        }));
+      }
+
+      const searchLimit = topK * 5;
       const pipeline = [
         {
           $vectorSearch: {
@@ -78,36 +111,23 @@ class VectorSearchService {
             k: topK,
             path: 'embedding_vector',
             index: 'type_embedding_index',
-            numCandidates: topK * 20,
-            limit: topK * 5,
+            numCandidates: searchLimit * 2,
+            limit: searchLimit,
+          },
+        },
+        {
+          $limit: topK,
+        },
+        {
+          $project: {
+            similarityScore: { $meta: 'vectorSearchScore' },
+            _id: 1,
+            atacante: 1,
+            defensor: 1,
+            multiplicador: 1,
           },
         },
       ];
-
-      if (typeFilter && typeFilter.length > 0) {
-        pipeline.push({
-          $match: {
-            $or: [
-              { atacante: { $in: typeFilter } },
-              { defensor: { $in: typeFilter } },
-            ],
-          },
-        });
-      }
-
-      pipeline.push({
-        $limit: topK,
-      });
-
-      pipeline.push({
-        $project: {
-          similarityScore: { $meta: 'vectorSearchScore' },
-          _id: 1,
-          atacante: 1,
-          defensor: 1,
-          multiplicador: 1,
-        },
-      });
 
       const results = await Type.aggregate(pipeline);
 

@@ -39,4 +39,8 @@ export class ChatbotService {
   getHistory(sessionId: string): Observable<ChatHistoryResponse> {
     return this.http.get<ChatHistoryResponse>(`${this.historyApi}?sessionId=${encodeURIComponent(sessionId)}`);
   }
+
+  clearHistory(sessionId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.messageApi.replace('/message', '/clear')}`, { sessionId });
+  }
 }

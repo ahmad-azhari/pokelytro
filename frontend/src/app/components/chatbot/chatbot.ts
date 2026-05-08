@@ -90,14 +90,16 @@ export class Chatbot implements OnInit, AfterViewChecked {
   }
 
   clearChat(): void {
-    this.messages.set([]);
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
+    const currentSessionId = this.sessionId();
 
-    const nextSessionId = this.generateSessionId();
-    localStorage.setItem(this.sessionStorageKey, nextSessionId);
-    this.sessionId.set(nextSessionId);
+    this.chatbotService.clearHistory(currentSessionId).subscribe({
+      next: () => {
+        this.messages.set([]);
+      },
+      error: () => {
+        this.messages.set([]);
+      },
+    });
   }
 
   ngAfterViewChecked(): void {

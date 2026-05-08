@@ -5,6 +5,7 @@ const {
   resolveUserId,
   getRecentMessages,
   appendConversation,
+  clearConversation,
 } = require("../services/lytrobot/memory.service");
 
 function toFrontendRole(role) {
@@ -74,6 +75,23 @@ router.post("/message", async (req, res) => {
 
     console.error("Error in /message route:", error);
     res.status(500).json({ message: "Error processing your LytroBot request." });
+  }
+});
+
+router.post("/clear", async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId || typeof sessionId !== "string") {
+      return res.status(400).json({ message: "A sessionId is required." });
+    }
+
+    const userId = resolveUserId(req);
+    await clearConversation({ sessionId, userId });
+
+    res.status(200).json({ message: "Conversation cleared successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "Error clearing conversation." });
   }
 });
 

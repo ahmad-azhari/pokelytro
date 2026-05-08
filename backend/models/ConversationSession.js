@@ -21,4 +21,6 @@ const ConversationSessionSchema = new mongoose.Schema(
   },
 );
 
+ConversationSessionSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 604800 });
+
 module.exports = mongoose.model("ConversationSession", ConversationSessionSchema);

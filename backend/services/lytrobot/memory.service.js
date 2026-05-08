@@ -70,8 +70,16 @@ async function appendConversation({ sessionId, userId, userMessage, assistantMes
   await session.save();
 }
 
+async function clearConversation({ sessionId, userId }) {
+  const session = await getOrCreateSession({ sessionId, userId });
+  session.messages = [];
+  await session.save();
+  return session;
+}
+
 module.exports = {
   resolveUserId,
   getRecentMessages,
   appendConversation,
+  clearConversation,
 };

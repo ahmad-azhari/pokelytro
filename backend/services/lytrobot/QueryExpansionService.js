@@ -154,7 +154,23 @@ class QueryExpansionService {
 
   async detectPokemonTypes(userQuery) {
     const pokemonNames = await this.extractPokemonNamesFromQuery(userQuery);
-    return await this.fetchPokemonTypesByNames(pokemonNames);
+    const typesFromPokemon = await this.fetchPokemonTypesByNames(pokemonNames);
+    const typeNames = await this.extractTypeNamesFromQuery(userQuery);
+    return [...new Set([...typesFromPokemon, ...typeNames])];
+  }
+
+  async extractTypeNamesFromQuery(userQuery) {
+    const allTypes = ['Normal', 'Fire', 'Water', 'Electric', 'Grass', 'Ice', 'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'];
+    const found = new Set();
+    const lowerQuery = userQuery.toLowerCase();
+
+    allTypes.forEach(type => {
+      if (lowerQuery.includes(type.toLowerCase())) {
+        found.add(type);
+      }
+    });
+
+    return Array.from(found);
   }
 
   buildSystemPromptForDomain(domain) {
