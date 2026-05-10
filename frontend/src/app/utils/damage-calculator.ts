@@ -70,7 +70,6 @@ export function computeDamage(
 ): DamageResult {
   const power = Math.max(0, Number(move.power) || 0);
   const dmgClass = String(move.damage_class ?? '').toLowerCase();
-  const isPhysical = dmgClass === 'physical';
   const isSpecial = dmgClass === 'special';
 
   const attackBase = isSpecial ? attacker.special_attack : attacker.attack;
@@ -87,7 +86,7 @@ export function computeDamage(
   const base = ((((2 * level) / 5) + 2) * power * (A / D)) / 50 + 2;
   const raw = base * (crit ? 1.5 : 1) * roll * stab * effectiveness;
 
-  return { damage: Math.max(1, Math.floor(raw)), crit, roll, stab, effectiveness };
+  return { damage: Math.max(0, Math.floor(raw)), crit, roll, stab, effectiveness };
 }
 
 // ── Formatting ─────────────────────────────────────────────────────────────
