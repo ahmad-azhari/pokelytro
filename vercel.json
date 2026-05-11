@@ -3,10 +3,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/pokelytro/browser",
   "installCommand": "npm install",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
+
 }
