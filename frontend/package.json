@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && (cp dist/pokelytro/browser/index.csr.html dist/pokelytro/browser/index.html || copy dist\\pokelytro\\browser\\index.csr.html dist\\pokelytro\\browser\\index.html)",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:pokelytro": "node dist/pokelytro/server/server.mjs"
