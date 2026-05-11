@@ -40,6 +40,21 @@
   cursor: pointer;
 }
 
+.select option {
+  background-color: #1e1e1e;
+  color: white;
+  padding: 8px;
+}
+
+.select option:hover {
+  background-color: #333;
+}
+
+.select option:checked {
+  background: linear-gradient(#1e1e1e, #1e1e1e);
+  background-color: #1e1e1e;
+}
+
 .btn {
   padding: 9px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);

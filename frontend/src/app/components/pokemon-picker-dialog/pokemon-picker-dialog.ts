@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -15,7 +15,7 @@ type PokemonPickerDialogData = {
 @Component({
   selector: 'app-pokemon-picker-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, PokemonList],
+  imports: [MatDialogModule, MatButtonModule, PokemonList],
   templateUrl: './pokemon-picker-dialog.html',
   styleUrls: ['./pokemon-picker-dialog.css'],
 })

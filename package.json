@@ -4,7 +4,7 @@
   "description": "Pokemon App - Frontend + Backend",
   "private": true,
   "scripts": {
-    "build": "npm run build --prefix frontend && npm install --prefix backend",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && node move-build.js && npm install --prefix backend",
     "start": "node backend/app.js",
     "dev": "concurrently \"npm start --prefix frontend\" \"npm start --prefix backend\""
   },
