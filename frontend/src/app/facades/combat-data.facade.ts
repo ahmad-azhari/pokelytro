@@ -44,8 +44,6 @@ export class CombatDataFacade {
       return;
     }
 
-    // forkJoin lanza moves y types en paralelo, cuando ambos terminan
-    // switchMap encadena la carga de equipos secuencialmente
     forkJoin({
       moves: this.moveService.get(),
       rows: this.typeService.get(),
