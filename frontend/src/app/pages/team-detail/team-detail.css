@@ -171,6 +171,7 @@
   border-radius: 6px;
   padding: 10px 16px;
   background: #6c757d;
+  width: fit-content;
 }
 .btn-edit-name,
 .btn-save,
