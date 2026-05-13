@@ -6,7 +6,8 @@ import { CommonModule } from '@angular/common';
 import { Pokemon } from '../../models/pokemon/pokemon';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { finalize } from 'rxjs/operators';
+import { finalize, tap } from 'rxjs/operators';
+import { PokemonListStore } from '../../services/pokemon-list-store/pokemon-list-store';
 import { PaginationControls } from '../pagination-controls/pagination-controls';
 import { FilterPanel } from '../filter-panel/filter-panel';
 
@@ -21,6 +22,7 @@ export class PokemonList implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
+  private pokemonListStore = inject(PokemonListStore);
 
   pokemons!: Pokemon[];
   searchTerm = '';
@@ -39,6 +41,7 @@ export class PokemonList implements OnInit {
   @Input() teamBuilding = false;
   @Input() teamDetails = false;
   @Input() currentTeam: Pokemon[] = [];
+  @Input() pokemonListData?: Pokemon[];  // ← NUEVO: recibe datos del resolver
   @Output() addPokemon = new EventEmitter<Pokemon>();
 
   @Input() replacePokemon = false;
@@ -62,24 +65,44 @@ export class PokemonList implements OnInit {
 
     this.loadUserFavorites();
 
-    // Get data from resolver
-    const data = this.route.snapshot.data['pokemonList'] as Pokemon[];
-    if (data) {
-      this.pokemons = data;
-      // Build filter options
-      const typeSet = new Set<string>();
-      for (const p of data) {
-        if (p.type1) typeSet.add(p.type1);
-        if (p.type2) typeSet.add(p.type2);
-      }
-      this.types = Array.from(typeSet).sort();
-      this.generations = Array.from(
-        new Set<number>(data.map((p: Pokemon) => p.generation)),
-      ).sort((a, b) => a - b);
-      this.recomputeTotalPages();
-      this.page = PaginationControls.normalizePage(this.page, this.totalPages);
-      this.syncUrl();
+    // PRIORIDAD 1: Input data (desde dialog con resolver)
+    if (this.pokemonListData && this.pokemonListData.length > 0) {
+      this.initializePokemons(this.pokemonListData);
+      return;
     }
+
+    // PRIORIDAD 2: Try to get data from resolver first
+    const data = this.route.snapshot.data['pokemonList'] as Pokemon[] | undefined;
+    if (data && data.length > 0) {
+      this.initializePokemons(data);
+    } else {
+      // PRIORIDAD 3: Fallback - Load from store
+      this.pokemonListStore
+        .getList()
+        .pipe(
+          tap((pokemons: Pokemon[]) => {
+            this.initializePokemons(pokemons);
+          }),
+        )
+        .subscribe();
+    }
+  }
+
+  private initializePokemons(data: Pokemon[]): void {
+    this.pokemons = data;
+    // Build filter options
+    const typeSet = new Set<string>();
+    for (const p of data) {
+      if (p.type1) typeSet.add(p.type1);
+      if (p.type2) typeSet.add(p.type2);
+    }
+    this.types = Array.from(typeSet).sort();
+    this.generations = Array.from(
+      new Set<number>(data.map((p: Pokemon) => p.generation)),
+    ).sort((a, b) => a - b);
+    this.recomputeTotalPages();
+    this.page = PaginationControls.normalizePage(this.page, this.totalPages);
+    this.syncUrl();
   }
 
   private restoreFromUrl(): void {

@@ -1,11 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
 import { MoveModel } from '../../services/move/move';
-import { Pokemon as PokemonModel } from '../../models/pokemon/pokemon';
+import { Pokemon, Pokemon as PokemonModel } from '../../models/pokemon/pokemon';
 import { PokemonPickerDialog } from '../../components/pokemon-picker-dialog/pokemon-picker-dialog';
 
 import { CombatDataFacade } from '../../facades/combat-data.facade';
@@ -24,6 +25,7 @@ export class Combat implements OnInit {
   protected data = inject(CombatDataFacade);
   protected battle = inject(BattleFacade);
   private dialog = inject(MatDialog);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.data.load((yourId, enemyId) => this._setupBattle(yourId, enemyId));
@@ -41,11 +43,14 @@ export class Combat implements OnInit {
   }
 
   openEnemyPicker(): void {
+    const pokemonList = this.route.snapshot.data['pokemonList'] as PokemonModel[] | undefined;
+    
     const dialogRef = this.dialog.open(PokemonPickerDialog, {
       data: {
         title: 'Elegir enemigo',
         subtitle: 'Selecciona el Pokémon enemigo para el combate:',
         actionLabel: 'Elegir',
+        pokemonList: pokemonList,  // ← Pasa datos del resolver
       },
       width: '980px',
       maxWidth: '96vw',

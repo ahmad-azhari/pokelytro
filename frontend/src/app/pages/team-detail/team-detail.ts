@@ -50,11 +50,14 @@ export class TeamDetail implements OnInit {
 
   // ── Pokemon ────────────────────────────────────────────────────────────────
   onUpdatePokemon(pokemon: Pokemon): void {
+    const pokemonList = this.route.snapshot.data['pokemonList'] as Pokemon[] | undefined;
+    
     const dialogRef = this.dialog.open(PokemonPickerDialog, {
       data: {
         title: 'Replace Pokemon',
         subtitle: `Replace "${pokemon.name}" with a new Pokemon:`,
         actionLabel: 'Replace',
+        pokemonList: pokemonList,  // ← Pasa datos del resolver
       },
       width: '980px',
       maxWidth: '96vw',

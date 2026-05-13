@@ -20,7 +20,7 @@ export const routes: Routes = [
   { path: '', component: Home },
   { path: 'pokedex', component: Pokedex, resolve: { pokemonList: pokemonListResolver } },
   { path: 'pokedex/:id', component: Pokemon },
-  { path: 'combat', component: Combat, canActivate: [authGuard] },
+  { path: 'combat', component: Combat, canActivate: [authGuard],resolve: { pokemonList: pokemonListResolver }},
   {
     path: 'team-builder',
     component: TeamBuilder,

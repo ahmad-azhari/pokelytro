@@ -10,6 +10,7 @@ type PokemonPickerDialogData = {
   title: string;
   subtitle?: string;
   actionLabel?: string;
+  pokemonList?: Pokemon[];  // ← NUEVO: datos del resolver
 };
 
 @Component({
