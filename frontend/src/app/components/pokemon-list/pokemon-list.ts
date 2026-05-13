@@ -1,20 +1,10 @@
 import {
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-  ViewChild,
-  inject,
-  signal,
+  Component, EventEmitter, Input, OnInit, Output, ViewChild, inject, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Pokemon } from '../../models/pokemon/pokemon';
-import { tap } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { PokemonListStore } from '../../services/pokemon-list-store/pokemon-list-store';
 import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs/operators';
 import { PaginationControls } from '../pagination-controls/pagination-controls';
@@ -28,7 +18,6 @@ import { FilterPanel } from '../filter-panel/filter-panel';
   styleUrls: ['./pokemon-list.css'],
 })
 export class PokemonList implements OnInit {
-  private pokemonListStore = inject(PokemonListStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
@@ -60,6 +49,37 @@ export class PokemonList implements OnInit {
 
   private SyncToUrl(): boolean {
     return true;
+  }
+
+  ngOnInit(): void {
+    if (this.SyncToUrl()) {
+      this.restoreFromUrl();
+    }
+
+    if (this.teamDetails) {
+      this.pageSize = 10;
+    }
+
+    this.loadUserFavorites();
+
+    // Get data from resolver
+    const data = this.route.snapshot.data['pokemonList'] as Pokemon[];
+    if (data) {
+      this.pokemons = data;
+      // Build filter options
+      const typeSet = new Set<string>();
+      for (const p of data) {
+        if (p.type1) typeSet.add(p.type1);
+        if (p.type2) typeSet.add(p.type2);
+      }
+      this.types = Array.from(typeSet).sort();
+      this.generations = Array.from(
+        new Set<number>(data.map((p: Pokemon) => p.generation)),
+      ).sort((a, b) => a - b);
+      this.recomputeTotalPages();
+      this.page = PaginationControls.normalizePage(this.page, this.totalPages);
+      this.syncUrl();
+    }
   }
 
   private restoreFromUrl(): void {
@@ -112,44 +132,6 @@ export class PokemonList implements OnInit {
 
   get pagedPokemons(): Pokemon[] {
     return PaginationControls.getPagedItems(this.filteredPokemons, this.page, this.pageSize);
-  }
-
-  ngOnInit(): void {
-    if (this.SyncToUrl()) {
-      this.restoreFromUrl();
-    }
-
-    if (this.teamDetails) {
-      this.pageSize = 10;
-    }
-
-    this.loadUserFavorites();
-
-    this.pokemonListStore
-      .getList()
-      .pipe(
-        tap((data: any) => {
-          this.pokemons = data;
-          // Build filter options
-          const typeSet = new Set<string>();
-          for (const p of data as Pokemon[]) {
-            if (p.type1) typeSet.add(p.type1);
-            if (p.type2) typeSet.add(p.type2);
-          }
-          this.types = Array.from(typeSet).sort();
-          this.generations = Array.from(
-            new Set<number>(data.map((p: Pokemon) => p.generation)),
-          ).sort((a, b) => a - b);
-          this.recomputeTotalPages();
-          this.page = PaginationControls.normalizePage(this.page, this.totalPages);
-          this.syncUrl();
-        }),
-      )
-      .subscribe({
-        next: () => {},
-        error: (err) => {
-        },
-      });
   }
 
   private loadUserFavorites(): void {
