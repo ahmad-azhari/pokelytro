@@ -6,8 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Pokemon } from '../../models/pokemon/pokemon';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { finalize, tap } from 'rxjs/operators';
-import { PokemonListStore } from '../../services/pokemon-list-store/pokemon-list-store';
+import { finalize } from 'rxjs/operators';
 import { PaginationControls } from '../pagination-controls/pagination-controls';
 import { FilterPanel } from '../filter-panel/filter-panel';
 
@@ -22,7 +21,27 @@ export class PokemonList implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
-  private pokemonListStore = inject(PokemonListStore);
+
+  ngOnInit(): void {
+    if (this.SyncToUrl()) {
+      this.restoreFromUrl();
+    }
+
+    if (this.teamDetails) {
+      this.pageSize = 10;
+    }
+    this.loadUserFavorites();
+
+    if (this.pokemonListData && this.pokemonListData.length > 0) {
+      this.initializePokemons(this.pokemonListData);
+      return;
+    }
+    
+    const data = this.route.snapshot.data['pokemonList'] as Pokemon[] | undefined;
+    if (data && data.length > 0) {
+      this.initializePokemons(data);
+    }
+  }
 
   pokemons!: Pokemon[];
   searchTerm = '';
@@ -54,39 +73,7 @@ export class PokemonList implements OnInit {
     return true;
   }
 
-  ngOnInit(): void {
-    if (this.SyncToUrl()) {
-      this.restoreFromUrl();
-    }
-
-    if (this.teamDetails) {
-      this.pageSize = 10;
-    }
-
-    this.loadUserFavorites();
-
-    // PRIORIDAD 1: Input data (desde dialog con resolver)
-    if (this.pokemonListData && this.pokemonListData.length > 0) {
-      this.initializePokemons(this.pokemonListData);
-      return;
-    }
-
-    // PRIORIDAD 2: Try to get data from resolver first
-    const data = this.route.snapshot.data['pokemonList'] as Pokemon[] | undefined;
-    if (data && data.length > 0) {
-      this.initializePokemons(data);
-    } else {
-      // PRIORIDAD 3: Fallback - Load from store
-      this.pokemonListStore
-        .getList()
-        .pipe(
-          tap((pokemons: Pokemon[]) => {
-            this.initializePokemons(pokemons);
-          }),
-        )
-        .subscribe();
-    }
-  }
+  
 
   private initializePokemons(data: Pokemon[]): void {
     this.pokemons = data;
